@@ -1,0 +1,89 @@
+package jwt
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"reflect"
+
+	"github.com/knq/pemutil"
+)
+
+var (
+	// b64 is the base64 config used for JWT
+	b64 = base64.URLEncoding.WithPadding(base64.NoPadding)
+
+	// ErrInvalidSignature is the error when a signature is invalid.
+	ErrInvalidSignature = errors.New("invalid signature")
+
+	// ErrInvalidAlgorithm is the error when the algorithm used in the header
+	// doesn't match with the Signer's.
+	ErrInvalidAlgorithm = errors.New("invalid algorithm")
+)
+
+// loadKeysFromPEM loads keys in the PEM and returns them in a pemutil.Store.
+func loadKeysFromPEM(p PEM) pemutil.Store {
+	store := pemutil.Store{}
+	pem := pemutil.PEM(p)
+
+	// attempt to load the key(s)
+	err := pem.Load(store)
+	if err != nil {
+		panic(fmt.Sprintf("error: %v", err))
+	}
+
+	return store
+}
+
+// getFieldWithTag lookups jwt tag, with specified tagName.
+func getFieldWithTag(obj interface{}, tagName string) *reflect.Value {
+	objValElem := reflect.ValueOf(obj).Elem()
+
+	for i := 0; i < objValElem.NumField(); i++ {
+		fieldType := objValElem.Type().Field(i)
+		if tagName == fieldType.Tag.Get("jwt") {
+			field := objValElem.Field(i)
+			return &field
+		}
+	}
+
+	return nil
+}
+
+// decodeToObjOrFieldWithTag decodes the buf into obj's field having the
+// specified jwt tagName. If the provided obj's has the same type as
+// defaultObj, then, then the obj is set to the defaultObj.
+func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defaultObj interface{}) error {
+	var err error
+
+	// reflect values
+	objValElem := reflect.ValueOf(obj).Elem()
+	defaultObjValElem := reflect.ValueOf(defaultObj).Elem()
+
+	// first check type, if same type, then set
+	if objValElem.Type() == defaultObjValElem.Type() {
+		objValElem.Set(defaultObjValElem)
+		return nil
+	}
+
+	fieldVal := getFieldWithTag(obj, tagName)
+	if fieldVal != nil {
+		// check field type and defaultObj type, if same type, then set
+		if fieldVal.Type() == defaultObjValElem.Type() {
+			fieldVal.Set(defaultObjValElem)
+			return nil
+		}
+
+		// assign obj address of field
+		obj = fieldVal.Addr().Interface()
+	}
+
+	// decode json
+	err = json.Unmarshal(buf, obj)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
