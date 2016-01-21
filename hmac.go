@@ -10,29 +10,34 @@ import (
 
 // hmacSigner provides a Signer implementation for HMAC.
 type hmacSigner struct {
+	alg  Algorithm
 	hash crypto.Hash
 	key  []byte
 }
 
 // NewHMACSigner constructs a HMAC Signer.
-func NewHMACSigner(pem PEM, hash crypto.Hash) Signer {
-	store := loadKeysFromPEM(pem)
+func NewHMACSigner(alg Algorithm) func(PEM, crypto.Hash) Signer {
 
-	var ok bool
-	var keyRaw interface{}
-	var key []byte
+	return func(pem PEM, hash crypto.Hash) Signer {
+		store := loadKeysFromPEM(pem)
 
-	if keyRaw, ok = store[pemutil.PrivateKey]; !ok {
-		panic("NewHMACSigner must be supplied a key a private key")
-	}
+		var ok bool
+		var keyRaw interface{}
+		var key []byte
 
-	if key, ok = keyRaw.([]byte); !ok {
-		panic("NewHMACSigner must be supplied a key of type []byte")
-	}
+		if keyRaw, ok = store[pemutil.PrivateKey]; !ok {
+			panic("NewHMACSigner must be supplied a key a private key")
+		}
 
-	return &hmacSigner{
-		hash: hash,
-		key:  key,
+		if key, ok = keyRaw.([]byte); !ok {
+			panic("NewHMACSigner must be supplied a key of type []byte")
+		}
+
+		return &hmacSigner{
+			alg:  alg,
+			hash: hash,
+			key:  key,
+		}
 	}
 }
 
@@ -91,4 +96,15 @@ func (hs *hmacSigner) Verify(buf, sig []byte) ([]byte, error) {
 	}
 
 	return dec, nil
+}
+
+// Encode encodes a claim as a JSON token
+func (hs *hmacSigner) Encode(obj interface{}) ([]byte, error) {
+	return hs.alg.Encode(hs, obj)
+}
+
+// Decode decodes a serialized token, storing in obj and verifies the
+// signature.
+func (hs *hmacSigner) Decode(buf []byte, obj interface{}) error {
+	return hs.alg.Decode(hs, buf, obj)
 }

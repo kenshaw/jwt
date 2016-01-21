@@ -1,22 +1,3 @@
-# About jwt [![Build Status](https://travis-ci.org/knq/jwt.svg)](https://travis-ci.org/knq/jwt) [![Coverage Status](https://coveralls.io/repos/knq/jwt/badge.svg?branch=master&service=github)](https://coveralls.io/github/knq/jwt?branch=master) #
-
-A [Golang](https://golang.org/project) package that provides a simple and
-secure way to encode and decode [JWT](https://jwt.io/) tokens.
-
-## Installation ##
-
-Install the package via the following:
-
-    go get -u github.com/knq/jwt
-
-## Usage ##
-
-Please see [the GoDoc API page](http://godoc.org/github.com/knq/jwt) for a
-full API listing.
-
-The jwt package can be used similarly to the following:
-
-```go
 // example/example.go
 package main
 
@@ -111,4 +92,3 @@ type myClaims struct {
     jwt.Claims
     WriteScope bool `json:"http://example/api/write"`
 }
-```

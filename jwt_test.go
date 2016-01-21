@@ -99,7 +99,7 @@ func TestDecode(t *testing.T) {
 		}
 
 		t0 := Token{}
-		err := Decode(test.alg, signer, []byte(test.tok), &t0)
+		err := signer.Decode([]byte(test.tok), &t0)
 		switch {
 		case test.valid && err != nil:
 			t.Errorf("test %d %s expected no error, got: %v", i, test.alg, err)
@@ -144,7 +144,7 @@ func TestEncode(t *testing.T) {
 		// gen signature
 		signer := test.alg.New(p)
 
-		b0, err := Encode(test.alg, signer, test.exp)
+		b0, err := signer.Encode(test.exp)
 		if err != nil {
 			t.Errorf("test %d %s expected no error, got: %v", i, test.alg, err)
 			continue

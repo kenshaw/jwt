@@ -14,6 +14,7 @@ import (
 
 // eccSigner provides a Signer for Elliptic Curves.
 type eccSigner struct {
+	alg   Algorithm
 	curve elliptic.Curve
 	hash  crypto.Hash
 	priv  *ecdsa.PrivateKey
@@ -23,13 +24,13 @@ type eccSigner struct {
 }
 
 // NewEllipticSigner creates an Elliptic Curve Signer for the specified curve.
-func NewEllipticSigner(curve elliptic.Curve) func(PEM, crypto.Hash) Signer {
+func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(PEM, crypto.Hash) Signer {
 	curveBitSize := curve.Params().BitSize
 
 	// calculate key len
 	keyLen := curveBitSize / 8
 	if curveBitSize%8 > 0 {
-		keyLen += 1
+		keyLen++
 	}
 
 	return func(pem PEM, hash crypto.Hash) Signer {
@@ -58,6 +59,7 @@ func NewEllipticSigner(curve elliptic.Curve) func(PEM, crypto.Hash) Signer {
 		}
 
 		return &eccSigner{
+			alg:    alg,
 			curve:  curve,
 			hash:   hash,
 			priv:   priv,
@@ -156,4 +158,15 @@ func (es *eccSigner) Verify(buf, sig []byte) ([]byte, error) {
 	}
 
 	return dec, nil
+}
+
+// Encode encodes a claim as a JSON token
+func (es *eccSigner) Encode(obj interface{}) ([]byte, error) {
+	return es.alg.Encode(es, obj)
+}
+
+// Decode decodes a serialized token, storing in obj and verifies the
+// signature.
+func (es *eccSigner) Decode(buf []byte, obj interface{}) error {
+	return es.alg.Decode(es, buf, obj)
 }

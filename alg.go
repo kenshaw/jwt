@@ -24,6 +24,13 @@ type Signer interface {
 	// encoded sig, returning any errors or ErrInvalidSignature if they do not
 	// match, or the b64 decoded signature if the signature is valid.
 	Verify(buf, sig []byte) ([]byte, error)
+
+	// Encode encodes the obj as a token.
+	Encode(obj interface{}) ([]byte, error)
+
+	// Decode decodes a serialized token, storing in obj and verifies the
+	// signature.
+	Decode(buf []byte, obj interface{}) error
 }
 
 // PEM is the wrapper around passed keys.
@@ -110,40 +117,40 @@ var algMap = map[Algorithm]struct {
 	}, crypto.SHA256},
 
 	// HS256 is HMAC + SHA-256
-	HS256: {NewHMACSigner, crypto.SHA256},
+	HS256: {NewHMACSigner(HS256), crypto.SHA256},
 
 	// HS384 is HMAC + SHA-384
-	HS384: {NewHMACSigner, crypto.SHA384},
+	HS384: {NewHMACSigner(HS384), crypto.SHA384},
 
 	// HS512 is HMAC + SHA-512
-	HS512: {NewHMACSigner, crypto.SHA512},
+	HS512: {NewHMACSigner(HS512), crypto.SHA512},
 
 	// RS256 is RSASSA-PKCS1-V1_5 + SHA-256
-	RS256: {NewRSASigner(PKCS1v15RSAMethod), crypto.SHA256},
+	RS256: {NewRSASigner(RS256, PKCS1v15RSAMethod), crypto.SHA256},
 
 	// RS384 is RSASSA-PKCS1-V1_5 + SHA-384
-	RS384: {NewRSASigner(PKCS1v15RSAMethod), crypto.SHA384},
+	RS384: {NewRSASigner(RS384, PKCS1v15RSAMethod), crypto.SHA384},
 
 	// RS512 is RSASSA-PKCS1-V1_5 + SHA-512
-	RS512: {NewRSASigner(PKCS1v15RSAMethod), crypto.SHA512},
+	RS512: {NewRSASigner(RS512, PKCS1v15RSAMethod), crypto.SHA512},
 
 	// ES256 is ECDSA P-256 + SHA-256
-	ES256: {NewEllipticSigner(elliptic.P256()), crypto.SHA256},
+	ES256: {NewEllipticSigner(ES256, elliptic.P256()), crypto.SHA256},
 
 	// ES384 is ECDSA P-384 + SHA-384
-	ES384: {NewEllipticSigner(elliptic.P384()), crypto.SHA384},
+	ES384: {NewEllipticSigner(ES384, elliptic.P384()), crypto.SHA384},
 
 	// ES512 is ECDSA P-521 + SHA-512
-	ES512: {NewEllipticSigner(elliptic.P521()), crypto.SHA512},
+	ES512: {NewEllipticSigner(ES512, elliptic.P521()), crypto.SHA512},
 
 	// PS256 is RSASSA-PSS + SHA-256
-	PS256: {NewRSASigner(PSSRSAMethod), crypto.SHA256},
+	PS256: {NewRSASigner(PS256, PSSRSAMethod), crypto.SHA256},
 
 	// PS384 is RSASSA-PSS + SHA-384
-	PS384: {NewRSASigner(PSSRSAMethod), crypto.SHA384},
+	PS384: {NewRSASigner(PS384, PSSRSAMethod), crypto.SHA384},
 
 	// PS512 is RSASSA-PSS + SHA-512
-	PS512: {NewRSASigner(PSSRSAMethod), crypto.SHA512},
+	PS512: {NewRSASigner(PS512, PSSRSAMethod), crypto.SHA512},
 }
 
 // New instantiates a new instance of a JWT encoder/decoder using the supplied
@@ -168,19 +175,19 @@ func (alg Algorithm) Header() Header {
 	}
 }
 
-// Encode encodes a JWT using the supplied key with the Algorithm.
-func (alg Algorithm) Encode(key PEM, obj interface{}) ([]byte, error) {
-	return Encode(alg, alg.New(key), obj)
+// Encode encodes a JWT using the Signer and Algorithm.
+func (alg Algorithm) Encode(signer Signer, obj interface{}) ([]byte, error) {
+	return Encode(alg, signer, obj)
 }
 
 // Decode verifies the signature of a Token against the Algorithm, decoding any
 // data in buf to the token.
-func (alg Algorithm) Decode(key PEM, buf []byte, obj interface{}) error {
-	return Decode(alg, alg.New(key), buf, obj)
+func (alg Algorithm) Decode(signer Signer, buf []byte, obj interface{}) error {
+	return Decode(alg, signer, buf, obj)
 }
 
 // MarshalJSON marshals Algorithm into a storable JSON string.
-func (alg *Algorithm) MarshalJSON() ([]byte, error) {
+func (alg Algorithm) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.Quote(alg.String())), nil
 }
 

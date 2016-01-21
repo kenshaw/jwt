@@ -41,6 +41,7 @@ var PSSRSAMethod = rsaMethod{
 
 // rsaSigner provides a Signer for RSA.
 type rsaSigner struct {
+	alg    Algorithm
 	method rsaMethod
 	hash   crypto.Hash
 	priv   *rsa.PrivateKey
@@ -48,7 +49,7 @@ type rsaSigner struct {
 }
 
 // NewRSASigner creates an RSA Signer for the specified RSA method.
-func NewRSASigner(method rsaMethod) func(PEM, crypto.Hash) Signer {
+func NewRSASigner(alg Algorithm, method rsaMethod) func(PEM, crypto.Hash) Signer {
 	return func(pem PEM, hash crypto.Hash) Signer {
 		store := loadKeysFromPEM(pem)
 
@@ -70,6 +71,7 @@ func NewRSASigner(method rsaMethod) func(PEM, crypto.Hash) Signer {
 		}
 
 		return &rsaSigner{
+			alg:    alg,
 			hash:   hash,
 			method: method,
 			priv:   priv,
@@ -138,4 +140,15 @@ func (rs *rsaSigner) Verify(buf, sig []byte) ([]byte, error) {
 	}
 
 	return dec, nil
+}
+
+// Encode encodes a claim as a JSON token
+func (rs *rsaSigner) Encode(obj interface{}) ([]byte, error) {
+	return rs.alg.Encode(rs, obj)
+}
+
+// Decode decodes a serialized token, storing in obj and verifies the
+// signature.
+func (rs *rsaSigner) Decode(buf []byte, obj interface{}) error {
+	return rs.alg.Decode(rs, buf, obj)
 }

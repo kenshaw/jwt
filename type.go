@@ -19,8 +19,8 @@ type ClaimsTime time.Time
 
 // MarshalJSON marshals the ClaimsTime as a JSON int representing the number of
 // seconds elapsed since January 1, 1970 UTC.
-func (ct *ClaimsTime) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%d", time.Time(*ct).Unix())), nil
+func (ct ClaimsTime) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%d", time.Time(ct).Unix())), nil
 }
 
 // UnmarshalJSON unmarshals a JSON int into the ClaimsTime, the int
