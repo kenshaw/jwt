@@ -11,34 +11,38 @@ import (
 	"github.com/knq/pemutil"
 )
 
-// Algorithm is the type for signing algorithms implemented in the package.
+// Algorithm is the type for signing algorithms implemented in this package.
 type Algorithm uint
 
-// Signer is the shared interface for a signature.
+// Signer is the shared interface for an Algorithm's encoding, decoding,
+// signing, and verify to handle the crypto primitives and lower-level API
+// calls.
 type Signer interface {
-	// Sign creates a signature for buf, storing it as a base64 safe string in
-	// dst.
+	// Sign creates a signature for buf, returning it as a URL-safe base64
+	// encoded byte slice.
 	Sign(buf []byte) ([]byte, error)
 
-	// Verify creates a signature for buf, and compares it against the base64
-	// encoded sig, returning any errors or ErrInvalidSignature if they do not
-	// match, or the b64 decoded signature if the signature is valid.
+	// Verify creates a signature for buf, comparing it against the URL-safe
+	// base64 encoded sig. If the sig is invalid, then ErrInvalidSignature will
+	// be returned.
 	Verify(buf, sig []byte) ([]byte, error)
 
-	// Encode encodes the obj as a token.
+	// Encode encodes obj as a token.
 	Encode(obj interface{}) ([]byte, error)
 
-	// Decode decodes a serialized token, storing in obj and verifies the
-	// signature.
+	// Decode decodes a serialized token, verifying the signature, storing the
+	// decoded data from the token in obj.
 	Decode(buf []byte, obj interface{}) error
 }
 
-// PEM is the wrapper around passed keys.
+// PEM is a wrapper that assists with loading PEM-encoded crypto primitives
+// (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc).
 type PEM pemutil.PEM
 
 const (
-	// NONE provides a JWT signing method for NONE. This is not implemented for security
-	// reasons.
+	// NONE provides a JWT signing method for NONE.
+	//
+	// NOTE: This is not implemented for security reasons.
 	NONE Algorithm = iota
 
 	// HS256 provides a JWT signing method for HMAC using SHA-256.
@@ -105,7 +109,7 @@ const (
 	PS512
 )
 
-// algMap is the actual algorithm implementations
+// algMap is a map of algorithm implementations to its Algorithm.
 var algMap = map[Algorithm]struct {
 	NewFunc func(PEM, crypto.Hash) Signer
 	Hash    crypto.Hash
@@ -153,9 +157,8 @@ var algMap = map[Algorithm]struct {
 	PS512: {NewRSASigner(PS512, PSSRSAMethod), crypto.SHA512},
 }
 
-// New instantiates a new instance of a JWT encoder/decoder using the supplied
-// key.
-func (alg Algorithm) New(key PEM) Signer {
+// New creates a JWT Signer using the supplied PEM data.
+func (alg Algorithm) New(pem PEM) Signer {
 	a := algMap[alg]
 
 	// check hash
@@ -164,7 +167,7 @@ func (alg Algorithm) New(key PEM) Signer {
 		return nil
 	}
 
-	return a.NewFunc(key, a.Hash)
+	return a.NewFunc(pem, a.Hash)
 }
 
 // Header builds the JWT header for the algorithm.
@@ -175,13 +178,13 @@ func (alg Algorithm) Header() Header {
 	}
 }
 
-// Encode encodes a JWT using the Signer and Algorithm.
+// Encode encodes a JWT using the Algorithm and Signer.
 func (alg Algorithm) Encode(signer Signer, obj interface{}) ([]byte, error) {
 	return Encode(alg, signer, obj)
 }
 
-// Decode verifies the signature of a Token against the Algorithm, decoding any
-// data in buf to the token.
+// Decode verifies the signature of a JWT against the Algorithm, decoding any
+// data in buf to obj.
 func (alg Algorithm) Decode(signer Signer, buf []byte, obj interface{}) error {
 	return Decode(alg, signer, buf, obj)
 }
@@ -191,7 +194,7 @@ func (alg Algorithm) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.Quote(alg.String())), nil
 }
 
-// UnmarshalJSON unmarshals the a JSON string into the corresponding Algorithm.
+// UnmarshalJSON unmarshals a JSON string into the corresponding Algorithm.
 func (alg *Algorithm) UnmarshalJSON(buf []byte) error {
 	// unquote string ...
 	val, err := strconv.Unquote(string(buf))

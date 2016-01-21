@@ -10,7 +10,7 @@ import (
 	"github.com/knq/pemutil"
 )
 
-// rsaMethod provides a common wrapper for different rsa signing methods.
+// rsaMethod provides a wrapper for rsa signing methods.
 type rsaMethod struct {
 	Sign   func(io.Reader, *rsa.PrivateKey, crypto.Hash, []byte) ([]byte, error)
 	Verify func(*rsa.PublicKey, crypto.Hash, []byte, []byte) error
@@ -39,7 +39,7 @@ var PSSRSAMethod = rsaMethod{
 	},
 }
 
-// rsaSigner provides a Signer for RSA.
+// rsaSigner provides a RSA Signer.
 type rsaSigner struct {
 	alg    Algorithm
 	method rsaMethod
@@ -48,7 +48,8 @@ type rsaSigner struct {
 	pub    *rsa.PublicKey
 }
 
-// NewRSASigner creates an RSA Signer for the specified RSA method.
+// NewRSASigner creates an RSA Signer for the specified Algorithm and RSA
+// method.
 func NewRSASigner(alg Algorithm, method rsaMethod) func(PEM, crypto.Hash) Signer {
 	return func(pem PEM, hash crypto.Hash) Signer {
 		store := loadKeysFromPEM(pem)
@@ -80,7 +81,8 @@ func NewRSASigner(alg Algorithm, method rsaMethod) func(PEM, crypto.Hash) Signer
 	}
 }
 
-// Sign creates a signature for buf, storing it as a base64 safe string in dst.
+// Sign creates a signature for buf, returning it as a URL-safe base64 encoded
+// byte slice.
 func (rs *rsaSigner) Sign(buf []byte) ([]byte, error) {
 	var err error
 
@@ -109,9 +111,9 @@ func (rs *rsaSigner) Sign(buf []byte) ([]byte, error) {
 	return enc, nil
 }
 
-// Verify creates a signature for buf, and compares it against the base64
-// encoded sig, returning any errors or ErrInvalidSignature if they do not
-// match.
+// Verify creates a signature for buf, comparing it against the URL-safe base64
+// encoded sig. If the sig is invalid, then ErrInvalidSignature will be
+// returned.
 func (rs *rsaSigner) Verify(buf, sig []byte) ([]byte, error) {
 	var err error
 
@@ -142,13 +144,13 @@ func (rs *rsaSigner) Verify(buf, sig []byte) ([]byte, error) {
 	return dec, nil
 }
 
-// Encode encodes a claim as a JSON token
+// Encode encodes obj as a token.
 func (rs *rsaSigner) Encode(obj interface{}) ([]byte, error) {
 	return rs.alg.Encode(rs, obj)
 }
 
-// Decode decodes a serialized token, storing in obj and verifies the
-// signature.
+// Decode decodes a serialized token, verifying the signature, storing the
+// decoded data from the token in obj.
 func (rs *rsaSigner) Decode(buf []byte, obj interface{}) error {
 	return rs.alg.Decode(rs, buf, obj)
 }

@@ -22,7 +22,8 @@ var (
 	ErrInvalidAlgorithm = errors.New("invalid algorithm")
 )
 
-// loadKeysFromPEM loads keys in the PEM and returns them in a pemutil.Store.
+// loadKeysFromPEM loads keys in the PEM, returning a store of loaded crypto
+// primitives (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc).
 func loadKeysFromPEM(p PEM) pemutil.Store {
 	store := pemutil.Store{}
 	pem := pemutil.PEM(p)
@@ -36,7 +37,8 @@ func loadKeysFromPEM(p PEM) pemutil.Store {
 	return store
 }
 
-// getFieldWithTag lookups jwt tag, with specified tagName.
+// getFieldWithTag lookups jwt tag, with specified tagName on obj, returning
+// its reflected value.
 func getFieldWithTag(obj interface{}, tagName string) *reflect.Value {
 	objValElem := reflect.ValueOf(obj).Elem()
 
@@ -53,7 +55,8 @@ func getFieldWithTag(obj interface{}, tagName string) *reflect.Value {
 
 // decodeToObjOrFieldWithTag decodes the buf into obj's field having the
 // specified jwt tagName. If the provided obj's has the same type as
-// defaultObj, then, then the obj is set to the defaultObj.
+// defaultObj, then the obj is set to the defaultObj, otherwise an attempt is
+// made to json.Decode the buf into obj.
 func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defaultObj interface{}) error {
 	var err error
 
@@ -67,15 +70,16 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 		return nil
 	}
 
+	// get field with specified jwt tagName (if any)
 	fieldVal := getFieldWithTag(obj, tagName)
 	if fieldVal != nil {
-		// check field type and defaultObj type, if same type, then set
+		// check field type and defaultObj type, if same, set
 		if fieldVal.Type() == defaultObjValElem.Type() {
 			fieldVal.Set(defaultObjValElem)
 			return nil
 		}
 
-		// assign obj address of field
+		// otherwise, assign obj address of field
 		obj = fieldVal.Addr().Interface()
 	}
 

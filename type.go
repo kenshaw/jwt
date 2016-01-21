@@ -14,17 +14,18 @@ type Header struct {
 	Algorithm Algorithm `json:"alg"`
 }
 
-// ClaimsTime wraps the time.Time for properly serializing/deserializing JSON.
+// ClaimsTime wraps time.Time for serializing/deserializing time as per the JWT
+// spec.
 type ClaimsTime time.Time
 
-// MarshalJSON marshals the ClaimsTime as a JSON int representing the number of
-// seconds elapsed since January 1, 1970 UTC.
+// MarshalJSON marshals the ClaimsTime as a JSON int, representing the number
+// of seconds elapsed since January 1, 1970 UTC.
 func (ct ClaimsTime) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("%d", time.Time(ct).Unix())), nil
 }
 
-// UnmarshalJSON unmarshals a JSON int into the ClaimsTime, the int
-// representing the number of seconds since January 1, 1970 UTC.
+// UnmarshalJSON unmarshals a number into the ClaimsTime. The number represents
+// the number of seconds since January 1, 1970 UTC.
 func (ct *ClaimsTime) UnmarshalJSON(buf []byte) error {
 	f, err := strconv.ParseFloat(string(buf), 64)
 	if err != nil {
@@ -38,7 +39,7 @@ func (ct *ClaimsTime) UnmarshalJSON(buf []byte) error {
 
 // Claims is a type containing the registered JWT claims.
 //
-// see: https://tools.ietf.org/html/rfc7519#section-4.1
+// See: https://tools.ietf.org/html/rfc7519#section-4.1
 type Claims struct {
 	// Issuer ("iss") identifies the principal that issued the JWT.
 	Issuer string `json:"iss,omitempty"`
@@ -64,7 +65,7 @@ type Claims struct {
 	JwtID string `json:"jti,omitempty"`
 }
 
-// Token is a full JWT token, comprising header, claims, and signature.
+// Token is a JWT token, comprising header, payload (ie, claims), and signature.
 type Token struct {
 	Header    Header `jwt:"header"`
 	Payload   Claims `jwt:"payload"`
@@ -72,12 +73,12 @@ type Token struct {
 }
 
 // UnverifiedToken is a token split into its composite parts, but has not yet
-// been verified.
+// been decoded, nor verified.
 type UnverifiedToken struct {
 	Header, Payload, Signature []byte
 }
 
-// DecodeUnverifiedToken decodes a token into an UnverifiedToken.
+// DecodeUnverifiedToken decodes a token into the provided UnverifiedToken.
 func DecodeUnverifiedToken(buf []byte, ut *UnverifiedToken) error {
 	b := bytes.Split(buf, tokenSep)
 	if len(b) != 3 {

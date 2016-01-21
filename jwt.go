@@ -1,10 +1,36 @@
 // Package jwt provides a simplified and secure API for encoding, decoding and
-// verifying JSON Web Tokens (JWT).
+// verifying JSON Web Tokens (JWT). See https://jwt.io/ and
+// https://tools.ietf.org/html/rfc7519
 //
-// It's API is designed to be instantly familiar to users of the standard json
-// package.
+// The API is designed to be instantly familiar to users of the standard crypto
+// and json packages:
 //
-// see: https://jwt.io/
+//		// create jwt.Signer from the rsakey on disk
+//		rs384 := jwt.RS384.New(jwt.PEM{"myrsakey.pem"})
+//
+//		// create claims
+//		claims := jwt.Claims{
+//			Issuer: "user@example.com",
+//		}
+//
+//		// encode claims as a token:
+//		buf, err := rs384.Encode(&claims)
+//		if err != nil {
+//			log.Fatalln(err)
+//		}
+//		fmt.Printf("token: %s\n", string(buf))
+//
+// 		// decode and verify claims:
+//		cl2 := jwt.Claims{}
+//		err := rs384.Decode(buf, &cl2)
+//		if err == jwt.ErrInvalidSignature {
+//			// invalid signature
+//		} else if err != nil {
+//			// handle general error
+//		}
+//
+//		fmt.Printf("decoded claims: %v\n", cl2)
+//
 package jwt
 
 import (
@@ -18,7 +44,12 @@ var (
 	tokenSep = []byte{'.'}
 )
 
-// Decode decodes a JWT, storing values in obj and verifying the signature.
+// Decode decodes a JWT, verifying the signature, and storing decoded values
+// from buf in obj.
+//
+// If the signature is invalid, ErrInvalidSignature will be returned.
+// Otherwise, any other encryption or decryption errors will be passed to the
+// caller.
 func Decode(alg Algorithm, signer Signer, buf []byte, obj interface{}) error {
 	var err error
 
@@ -87,7 +118,7 @@ func Decode(alg Algorithm, signer Signer, buf []byte, obj interface{}) error {
 	return nil
 }
 
-// Encode encodes a obj as the claim in a Token using the Algorithm and Signer.
+// Encode encodes a JWT using the Algorithm and Signer.
 func Encode(alg Algorithm, signer Signer, obj interface{}) ([]byte, error) {
 	var err error
 	var headerObj, payloadObj interface{}

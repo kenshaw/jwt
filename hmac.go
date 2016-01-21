@@ -8,16 +8,15 @@ import (
 	"github.com/knq/pemutil"
 )
 
-// hmacSigner provides a Signer implementation for HMAC.
+// hmacSigner provides a HMAC Signer.
 type hmacSigner struct {
 	alg  Algorithm
 	hash crypto.Hash
 	key  []byte
 }
 
-// NewHMACSigner constructs a HMAC Signer.
+// NewHMACSigner creates a HMAC Signer for the specified Algorithm.
 func NewHMACSigner(alg Algorithm) func(PEM, crypto.Hash) Signer {
-
 	return func(pem PEM, hash crypto.Hash) Signer {
 		store := loadKeysFromPEM(pem)
 
@@ -41,7 +40,8 @@ func NewHMACSigner(alg Algorithm) func(PEM, crypto.Hash) Signer {
 	}
 }
 
-// Sign creates a signature for buf, storing it as a base64 safe string in dst.
+// Sign creates a signature for buf, returning it as a URL-safe base64 encoded
+// byte slice.
 func (hs *hmacSigner) Sign(buf []byte) ([]byte, error) {
 	var err error
 
@@ -65,9 +65,9 @@ func (hs *hmacSigner) Sign(buf []byte) ([]byte, error) {
 	return enc, nil
 }
 
-// Verify creates a signature for buf, and compares it against the base64
-// encoded sig, returning any errors or ErrInvalidSignature if they do not
-// match.
+// Verify creates a signature for buf, comparing it against the URL-safe base64
+// encoded sig. If the sig is invalid, then ErrInvalidSignature will be
+// returned.
 func (hs *hmacSigner) Verify(buf, sig []byte) ([]byte, error) {
 	var err error
 
@@ -98,13 +98,13 @@ func (hs *hmacSigner) Verify(buf, sig []byte) ([]byte, error) {
 	return dec, nil
 }
 
-// Encode encodes a claim as a JSON token
+// Encode encodes obj as a JSON token.
 func (hs *hmacSigner) Encode(obj interface{}) ([]byte, error) {
 	return hs.alg.Encode(hs, obj)
 }
 
-// Decode decodes a serialized token, storing in obj and verifies the
-// signature.
+// Decode decodes a serialized token, verifying the signature, storing the
+// decoded data from the token in obj.
 func (hs *hmacSigner) Decode(buf []byte, obj interface{}) error {
 	return hs.alg.Decode(hs, buf, obj)
 }
