@@ -1,6 +1,7 @@
 // Package jwt provides a simplified and secure API for encoding, decoding and
-// verifying JSON Web Tokens (JWT). See https://jwt.io/ and
-// https://tools.ietf.org/html/rfc7519
+// verifying JSON Web Tokens (JWT).
+//
+// See https://jwt.io/ and https://tools.ietf.org/html/rfc7519
 //
 // The API is designed to be instantly familiar to users of the standard crypto
 // and json packages:
