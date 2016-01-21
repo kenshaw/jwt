@@ -83,7 +83,7 @@ func main() {
         "aud": "my audience",
         "http://example/api/write": true,
     }
-    fmt.Printf("My Custom Claims: %v\n\n", c3)
+    fmt.Printf("My Custom Claims: %+v\n\n", c3)
 
     buf, err = ps384.Encode(&c3)
     if err != nil {
