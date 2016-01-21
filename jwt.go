@@ -22,14 +22,14 @@
 //
 // 		// decode and verify claims:
 //		cl2 := jwt.Claims{}
-//		err := rs384.Decode(buf, &cl2)
+//		err = rs384.Decode(buf, &cl2)
 //		if err == jwt.ErrInvalidSignature {
 //			// invalid signature
 //		} else if err != nil {
 //			// handle general error
 //		}
 //
-//		fmt.Printf("decoded claims: %v\n", cl2)
+//		fmt.Printf("decoded claims: %+v\n", cl2)
 //
 package jwt
 
