@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	// b64 is the base64 config used for JWT
+	// b64 is the base64 config used for encoding/decoding the jwt parts.
 	b64 = base64.URLEncoding.WithPadding(base64.NoPadding)
 
 	// ErrInvalidSignature is the error when a signature is invalid.
@@ -19,6 +19,9 @@ var (
 	// ErrInvalidAlgorithm is the error when the algorithm used in the header
 	// doesn't match with the Signer's.
 	ErrInvalidAlgorithm = errors.New("invalid algorithm")
+
+	// ErrInvalidToken is the error when the JWT is improperly formatted.
+	ErrInvalidToken = errors.New("invalid token")
 )
 
 // loadKeysFromPEM loads keys in the PEM, returning a pemutil.Store containing

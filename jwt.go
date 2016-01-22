@@ -48,9 +48,9 @@ var (
 // Decode decodes a JWT, verifying the signature, and storing decoded values
 // from buf in obj.
 //
-// If the signature is invalid, ErrInvalidSignature will be returned.
-// Otherwise, any other encryption or decryption errors will be passed to the
-// caller.
+// If the token, or signature is invalid, ErrInvalidToken or
+// ErrInvalidSignature will be returned, respectively. Otherwise, any other
+// errors encountered during decoding will be returned.
 func Decode(alg Algorithm, signer Signer, buf []byte, obj interface{}) error {
 	var err error
 
@@ -119,7 +119,8 @@ func Decode(alg Algorithm, signer Signer, buf []byte, obj interface{}) error {
 	return nil
 }
 
-// Encode encodes a JWT using the Algorithm and Signer.
+// Encode encodes a JWT using the Algorithm and Signer, returning the URL-safe
+// encoded token or any errors encountered during encoding.
 func Encode(alg Algorithm, signer Signer, obj interface{}) ([]byte, error) {
 	var err error
 	var headerObj, payloadObj interface{}

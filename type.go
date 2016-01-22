@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -82,7 +81,7 @@ type UnverifiedToken struct {
 func DecodeUnverifiedToken(buf []byte, ut *UnverifiedToken) error {
 	b := bytes.Split(buf, tokenSep)
 	if len(b) != 3 {
-		return errors.New("token invalid")
+		return ErrInvalidToken
 	}
 
 	ut.Header = b[0]

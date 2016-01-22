@@ -249,7 +249,7 @@ func (alg Algorithm) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshals a JSON string into the corresponding Algorithm.
 func (alg *Algorithm) UnmarshalJSON(buf []byte) error {
-	// unquote string ...
+	// unquote
 	val, err := strconv.Unquote(string(buf))
 	if err != nil {
 		return err
