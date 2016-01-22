@@ -82,7 +82,6 @@ func (hs *hmacSigner) Verify(buf, sig []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	calcSig := h.Sum(nil)
 
 	// decode
 	dec, err := b64.DecodeString(string(sig))
@@ -91,7 +90,7 @@ func (hs *hmacSigner) Verify(buf, sig []byte) ([]byte, error) {
 	}
 
 	// verify
-	if !hmac.Equal(calcSig, dec) {
+	if !hmac.Equal(h.Sum(nil), dec) {
 		return nil, ErrInvalidSignature
 	}
 
