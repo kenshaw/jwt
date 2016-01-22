@@ -109,7 +109,7 @@ func (rs *rsaSigner) Sign(buf []byte) ([]byte, error) {
 
 	// check rs.priv
 	if rs.priv == nil {
-		return nil, errors.New("rsaSigner must be provided a *rsa.PrivateKey")
+		return nil, errors.New("rsaSigner.Sign: priv cannot be nil")
 	}
 
 	// hash
@@ -140,7 +140,7 @@ func (rs *rsaSigner) Verify(buf, sig []byte) ([]byte, error) {
 
 	// check rs.pub
 	if rs.pub == nil {
-		return nil, errors.New("rsaSigner must be provided a *rsa.PublicKey")
+		return nil, errors.New("rsaSigner.Verify: pub cannot be nil")
 	}
 
 	// hash
