@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 
 	"github.com/knq/pemutil"
@@ -22,16 +21,16 @@ var (
 	ErrInvalidAlgorithm = errors.New("invalid algorithm")
 )
 
-// loadKeysFromPEM loads keys in the PEM, returning a store of loaded crypto
-// primitives (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc).
-func loadKeysFromPEM(p PEM) pemutil.Store {
+// loadKeysFromPEM loads keys in the PEM, returning a pemutil.Store containing
+// the loaded crypto primitives (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc).
+//
+// loadKeysFromPEM will panic if an error is encountered when calling pem.Load.
+func loadKeysFromPEM(pem pemutil.PEM) pemutil.Store {
+	// attempt to load crypto primitives
 	store := pemutil.Store{}
-	pem := pemutil.PEM(p)
-
-	// attempt to load the key(s)
 	err := pem.Load(store)
 	if err != nil {
-		panic(fmt.Sprintf("error: %v", err))
+		panic(err)
 	}
 
 	return store

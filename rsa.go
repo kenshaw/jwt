@@ -50,10 +50,8 @@ type rsaSigner struct {
 
 // NewRSASigner creates an RSA Signer for the specified Algorithm and RSA
 // method.
-func NewRSASigner(alg Algorithm, method rsaMethod) func(PEM, crypto.Hash) Signer {
-	return func(pem PEM, hash crypto.Hash) Signer {
-		store := loadKeysFromPEM(pem)
-
+func NewRSASigner(alg Algorithm, method rsaMethod) func(pemutil.Store, crypto.Hash) Signer {
+	return func(store pemutil.Store, hash crypto.Hash) Signer {
 		var ok bool
 		var privRaw, pubRaw interface{}
 		var priv *rsa.PrivateKey
@@ -61,13 +59,13 @@ func NewRSASigner(alg Algorithm, method rsaMethod) func(PEM, crypto.Hash) Signer
 
 		if privRaw, ok = store[pemutil.RSAPrivateKey]; ok {
 			if priv, ok = privRaw.(*rsa.PrivateKey); !ok {
-				panic("private key supplied to NewRSASigner must be *rsa.PrivateKey")
+				panic("NewRSASigner: private key must be a *rsa.PrivateKey")
 			}
 		}
 
 		if pubRaw, ok = store[pemutil.PublicKey]; ok {
 			if pub, ok = pubRaw.(*rsa.PublicKey); !ok {
-				panic("public key supplied to NewRSASigner must be *rsa.PublicKey")
+				panic("NewRSASigner: public key must be a *rsa.PublicKey")
 			}
 		}
 

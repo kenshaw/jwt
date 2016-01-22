@@ -4,8 +4,11 @@ package jwt
 
 import (
 	"crypto"
+	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rsa"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/knq/pemutil"
@@ -111,11 +114,11 @@ const (
 
 // algMap is a map of algorithm implementations to its Algorithm.
 var algMap = map[Algorithm]struct {
-	NewFunc func(PEM, crypto.Hash) Signer
+	NewFunc func(pemutil.Store, crypto.Hash) Signer
 	Hash    crypto.Hash
 }{
 	// none
-	NONE: {func(PEM, crypto.Hash) Signer {
+	NONE: {func(pemutil.Store, crypto.Hash) Signer {
 		panic("not implemented")
 		return nil
 	}, crypto.SHA256},
@@ -157,17 +160,67 @@ var algMap = map[Algorithm]struct {
 	PS512: {NewRSASigner(PS512, PSSRSAMethod), crypto.SHA512},
 }
 
-// New creates a JWT Signer using the supplied PEM data.
-func (alg Algorithm) New(pem PEM) Signer {
+// New creates a Signer using the supplied keyset.
+//
+// The keyset can be of type PEM, pemutil.PEM, pemutil.Store,
+// *rsa.{PrivateKey,PublicKey}, *ecdsa.{PrivateKey,PublicKey}, or []byte.
+//
+// PLEASE NOTE: if a calling package *DOES NOT* provide a private key, tokens
+// cannot be Encode'd. Similarly, if no public key is provided, tokens *CANNOT*
+// be Decode'd (ie, verified). Additionally, as this is a naive implementation,
+// no attempt is made to generate or derive a public key from a private key.
+// Therefore, please pass *BOTH* a public *AND* private key (if the Algorithm
+// calls for it), wrapped by a pemutil.Store or as PEM/pemutil.PEM in order to
+// Encode *AND* Decode JWTs.
+//
+// New will panic if the provided keyset does not provide enough information,
+// or the keyset data cannot be loaded, is invalid, is otherwise incorrect for
+// the Algorithm, or if the associated crypto.Hash (ie, SHA256, SHA384, or
+// SHA512) is not available for the platform.
+func (alg Algorithm) New(keyset interface{}) Signer {
 	a := algMap[alg]
 
 	// check hash
 	if !a.Hash.Available() {
-		panic("hash unavailable")
+		panic(fmt.Sprintf("%s.New: crypto hash unavailable", alg))
 		return nil
 	}
 
-	return a.NewFunc(pem, a.Hash)
+	var store pemutil.Store
+
+	// load the data
+	switch p := keyset.(type) {
+	case pemutil.Store:
+		store = p
+
+	// pem data
+	case pemutil.PEM:
+		store = loadKeysFromPEM(p)
+	case PEM:
+		store = loadKeysFromPEM(pemutil.PEM(p))
+
+	// raw key
+	case []byte:
+		store = pemutil.Store{pemutil.PrivateKey: p}
+
+	// rsa keys
+	case *rsa.PrivateKey:
+		store = pemutil.Store{pemutil.RSAPrivateKey: p}
+	case *rsa.PublicKey:
+		store = pemutil.Store{pemutil.PublicKey: p}
+
+	// ecc keys
+	case *ecdsa.PrivateKey:
+		store = pemutil.Store{pemutil.ECPrivateKey: p}
+	case *ecdsa.PublicKey:
+		store = pemutil.Store{pemutil.PublicKey: p}
+
+	default:
+		panic(fmt.Sprintf("%s.New: unrecognized keyset type", alg))
+		return nil
+	}
+
+	return a.NewFunc(store, a.Hash)
 }
 
 // Header builds the JWT header for the algorithm.

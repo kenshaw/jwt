@@ -16,20 +16,18 @@ type hmacSigner struct {
 }
 
 // NewHMACSigner creates a HMAC Signer for the specified Algorithm.
-func NewHMACSigner(alg Algorithm) func(PEM, crypto.Hash) Signer {
-	return func(pem PEM, hash crypto.Hash) Signer {
-		store := loadKeysFromPEM(pem)
-
+func NewHMACSigner(alg Algorithm) func(pemutil.Store, crypto.Hash) Signer {
+	return func(store pemutil.Store, hash crypto.Hash) Signer {
 		var ok bool
 		var keyRaw interface{}
 		var key []byte
 
 		if keyRaw, ok = store[pemutil.PrivateKey]; !ok {
-			panic("NewHMACSigner must be supplied a key a private key")
+			panic("NewHMACSigner: missing private key in Store")
 		}
 
 		if key, ok = keyRaw.([]byte); !ok {
-			panic("NewHMACSigner must be supplied a key of type []byte")
+			panic("NewHMACSigner: private key must be type []byte")
 		}
 
 		return &hmacSigner{
@@ -47,7 +45,7 @@ func (hs *hmacSigner) Sign(buf []byte) ([]byte, error) {
 
 	// check hs.key
 	if hs.key == nil {
-		return nil, errors.New("hmacSigner must be provided a key of type []byte")
+		return nil, errors.New("hmacSigner.Sign: key cannot be nil")
 	}
 
 	// hash
@@ -73,7 +71,7 @@ func (hs *hmacSigner) Verify(buf, sig []byte) ([]byte, error) {
 
 	// check hs.key
 	if hs.key == nil {
-		return nil, errors.New("hmacSigner must be provided a key of type []byte")
+		return nil, errors.New("hmacSigner.Verify: key cannot be nil")
 	}
 
 	// hash

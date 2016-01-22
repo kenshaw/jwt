@@ -24,7 +24,7 @@ type eccSigner struct {
 }
 
 // NewEllipticSigner creates an Elliptic Curve Signer for the specified curve.
-func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(PEM, crypto.Hash) Signer {
+func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(pemutil.Store, crypto.Hash) Signer {
 	curveBitSize := curve.Params().BitSize
 
 	// calculate key len
@@ -33,9 +33,7 @@ func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(PEM, crypto.Has
 		keyLen++
 	}
 
-	return func(pem PEM, hash crypto.Hash) Signer {
-		store := loadKeysFromPEM(pem)
-
+	return func(store pemutil.Store, hash crypto.Hash) Signer {
 		var ok bool
 		var privRaw, pubRaw interface{}
 		var priv *ecdsa.PrivateKey
@@ -43,18 +41,18 @@ func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(PEM, crypto.Has
 
 		if privRaw, ok = store[pemutil.ECPrivateKey]; ok {
 			if priv, ok = privRaw.(*ecdsa.PrivateKey); !ok {
-				panic("private key supplied to NewEllipticSigner must be *ecdsa.PrivateKey")
+				panic("NewEllipticSigner: private key must be a *ecdsa.PrivateKey")
 			}
 
 			// check curve
 			if curveBitSize != priv.Curve.Params().BitSize {
-				panic(fmt.Sprintf("private key supplied to NewEllipticSigner must have matching bit size [expected %d, got: %d]", curve.Params().BitSize, priv.Curve.Params().BitSize))
+				panic(fmt.Sprintf("NewEllipticSigner: private key have bit size %d", curve.Params().BitSize))
 			}
 		}
 
 		if pubRaw, ok = store[pemutil.PublicKey]; ok {
 			if pub, ok = pubRaw.(*ecdsa.PublicKey); !ok {
-				panic("public key supplied to NewEllipticSigner must be *ecdsa.PublicKey")
+				panic("NewEllipticSigner: public key must be a *ecdsa.PublicKey")
 			}
 		}
 
@@ -80,14 +78,14 @@ func (es *eccSigner) mksig(r, s *big.Int) ([]byte, error) {
 	rb := r.Bytes()
 	n = copy(buf[es.keyLen-len(rb):], rb)
 	if n != len(rb) {
-		return nil, fmt.Errorf("could not copy r into sig, copied: %d", n)
+		return nil, fmt.Errorf("eccSigner.mksig: could not copy r into sig, copied: %d", n)
 	}
 
 	// copy s into buf
 	sb := s.Bytes()
 	n = copy(buf[es.keyLen+(es.keyLen-(len(sb))):], sb)
 	if n != len(sb) {
-		return nil, fmt.Errorf("could not copy s into sig, copied: %d", n)
+		return nil, fmt.Errorf("eccSigner.mksig: could not copy s into sig, copied: %d", n)
 	}
 
 	return buf, nil
@@ -100,7 +98,7 @@ func (es *eccSigner) Sign(buf []byte) ([]byte, error) {
 
 	// check es.priv
 	if es.priv == nil {
-		return nil, errors.New("eccSigner must be provided a *ecdsa.PrivateKey")
+		return nil, errors.New("eccSigner.Sign: priv cannot be nil")
 	}
 
 	// hash
@@ -137,7 +135,7 @@ func (es *eccSigner) Verify(buf, sig []byte) ([]byte, error) {
 
 	// check es.pub
 	if es.pub == nil {
-		return nil, errors.New("eccSigner must be provided a *ecdsa.PublicKey")
+		return nil, errors.New("eccSigner.Verify: pub cannot be nil")
 	}
 
 	// hash
