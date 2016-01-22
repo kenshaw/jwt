@@ -5,9 +5,15 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/knq/pemutil"
+)
+
+const (
+	// RSAMinimumBitLen is the minimum accepted RSA key length.
+	RSAMinimumBitLen = 2048
 )
 
 // rsaMethod provides a wrapper for rsa signing methods.
@@ -57,16 +63,33 @@ func NewRSASigner(alg Algorithm, method rsaMethod) func(pemutil.Store, crypto.Ha
 		var priv *rsa.PrivateKey
 		var pub *rsa.PublicKey
 
+		// check private key
 		if privRaw, ok = store[pemutil.RSAPrivateKey]; ok {
 			if priv, ok = privRaw.(*rsa.PrivateKey); !ok {
 				panic("NewRSASigner: private key must be a *rsa.PrivateKey")
 			}
+
+			// check private key length
+			if priv.N.BitLen() < RSAMinimumBitLen {
+				panic(fmt.Sprintf("NewRSASigner: private key must have minimum length of %d", RSAMinimumBitLen))
+			}
 		}
 
+		// check public key
 		if pubRaw, ok = store[pemutil.PublicKey]; ok {
 			if pub, ok = pubRaw.(*rsa.PublicKey); !ok {
 				panic("NewRSASigner: public key must be a *rsa.PublicKey")
 			}
+
+			// check public key length
+			if pub.N.BitLen() < RSAMinimumBitLen {
+				panic(fmt.Sprintf("NewRSASigner: private key must have minimum length of %d", RSAMinimumBitLen))
+			}
+		}
+
+		// check that either a private or public key has been provided
+		if priv == nil && pub == nil {
+			panic("NewRSASigner: either a private key or a public key must be provided")
 		}
 
 		return &rsaSigner{

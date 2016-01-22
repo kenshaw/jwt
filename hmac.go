@@ -22,10 +22,12 @@ func NewHMACSigner(alg Algorithm) func(pemutil.Store, crypto.Hash) Signer {
 		var keyRaw interface{}
 		var key []byte
 
+		// check private key
 		if keyRaw, ok = store[pemutil.PrivateKey]; !ok {
-			panic("NewHMACSigner: missing private key in Store")
+			panic("NewHMACSigner: private key must be provided")
 		}
 
+		// check key type
 		if key, ok = keyRaw.([]byte); !ok {
 			panic("NewHMACSigner: private key must be type []byte")
 		}

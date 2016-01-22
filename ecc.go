@@ -39,21 +39,28 @@ func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(pemutil.Store, 
 		var priv *ecdsa.PrivateKey
 		var pub *ecdsa.PublicKey
 
+		// check private key
 		if privRaw, ok = store[pemutil.ECPrivateKey]; ok {
 			if priv, ok = privRaw.(*ecdsa.PrivateKey); !ok {
 				panic("NewEllipticSigner: private key must be a *ecdsa.PrivateKey")
 			}
 
-			// check curve
+			// check curve type
 			if curveBitSize != priv.Curve.Params().BitSize {
 				panic(fmt.Sprintf("NewEllipticSigner: private key have bit size %d", curve.Params().BitSize))
 			}
 		}
 
+		// check public key
 		if pubRaw, ok = store[pemutil.PublicKey]; ok {
 			if pub, ok = pubRaw.(*ecdsa.PublicKey); !ok {
 				panic("NewEllipticSigner: public key must be a *ecdsa.PublicKey")
 			}
+		}
+
+		// check that either a private or public key has been provided
+		if priv == nil && pub == nil {
+			panic("NewEllipticSigner: either a private key or a public key must be provided")
 		}
 
 		return &eccSigner{
