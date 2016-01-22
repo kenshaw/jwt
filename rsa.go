@@ -94,8 +94,8 @@ func NewRSASigner(alg Algorithm, method rsaMethod) func(pemutil.Store, crypto.Ha
 
 		return &rsaSigner{
 			alg:    alg,
-			hash:   hash,
 			method: method,
+			hash:   hash,
 			priv:   priv,
 			pub:    pub,
 		}

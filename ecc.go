@@ -27,7 +27,7 @@ type eccSigner struct {
 func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(pemutil.Store, crypto.Hash) Signer {
 	curveBitSize := curve.Params().BitSize
 
-	// calculate key len
+	// precompute curve key len
 	keyLen := curveBitSize / 8
 	if curveBitSize%8 > 0 {
 		keyLen++
@@ -45,7 +45,7 @@ func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(pemutil.Store, 
 				panic("NewEllipticSigner: private key must be a *ecdsa.PrivateKey")
 			}
 
-			// check curve type
+			// check curve type matches private key curve type
 			if curveBitSize != priv.Curve.Params().BitSize {
 				panic(fmt.Sprintf("NewEllipticSigner: private key have bit size %d", curve.Params().BitSize))
 			}
@@ -75,7 +75,7 @@ func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(pemutil.Store, 
 }
 
 // mksig creates a byte slice of length 2*keyLen, copying the bytes from r and
-// s into it, and left padding the bytes of r and s as needed.
+// s into the slice, left padding r and s to keyLen.
 func (es *eccSigner) mksig(r, s *big.Int) ([]byte, error) {
 	var n int
 
