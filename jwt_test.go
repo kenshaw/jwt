@@ -210,6 +210,8 @@ func TestPeekErrors(t *testing.T) {
 		enc(`{"alg":123}`) + `.` + enc(`{}`) + `.`,
 		enc(`{"alg":"ES256"}`) + `.` + enc(`{"iss":}`) + `.`,
 		enc(`{"alg":123}`) + `.` + enc(`{"iss":"issuer"}`) + `.`,
+		enc(`{"foo":"bar"}`) + `.` + enc(`{"foo":"bar"}`) + `.`,
+		enc(`{"alg":"none"}`) + `.` + enc(`{"iss":"issuer"}`) + `.`,
 	}
 
 	for i, test := range tests {

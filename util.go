@@ -127,7 +127,7 @@ func peekField(buf []byte, fieldName string, pos int) (string, error) {
 	// b64 decode
 	dec, err := b64.DecodeString(string(b))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not decode token %s", typ)
 	}
 
 	// json decode
@@ -137,5 +137,5 @@ func peekField(buf []byte, fieldName string, pos int) (string, error) {
 		return fmt.Sprintf("%v", val), nil
 	}
 
-	return "", fmt.Errorf("token %s field %s not present or invalid", fieldName, typ)
+	return "", fmt.Errorf("token %s field %s not present or invalid", typ, fieldName)
 }
