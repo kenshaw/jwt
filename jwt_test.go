@@ -191,3 +191,45 @@ func TestEncode(t *testing.T) {
 		}
 	}
 }
+
+func enc(v string) string {
+	return b64.EncodeToString([]byte(v))
+}
+
+func TestPeekErrors(t *testing.T) {
+	tests := []string{
+		``,
+		`.`,
+		`..`,
+		`{}..`,
+		`{}.{}.`,
+		enc(`{}`),
+		enc(`{}`) + `.{}.`,
+		enc(`{}`) + `.` + enc(`{}`) + `.`,
+		enc(`{"alg":}`) + `.` + enc(`{}`) + `.`,
+		enc(`{"alg":123}`) + `.` + enc(`{}`) + `.`,
+		enc(`{"alg":"ES256"}`) + `.` + enc(`{"iss":}`) + `.`,
+		enc(`{"alg":123}`) + `.` + enc(`{"iss":"issuer"}`) + `.`,
+	}
+
+	for i, test := range tests {
+		_, _, err := PeekAlgorithmAndIssuer([]byte(test))
+		if err == nil {
+			t.Errorf("test %d expected error, got nil\n%s\n", i, test)
+		}
+	}
+}
+
+func TestPeek(t *testing.T) {
+	test := enc(`{"alg":"ES256"}`) + `.` + enc(`{"iss":"issuer"}`) + `.`
+	alg, issuer, err := PeekAlgorithmAndIssuer([]byte(test))
+	if err != nil {
+		t.Errorf("expected no error, got: %v", err)
+	}
+	if "issuer" != issuer {
+		t.Errorf("issuer should be 'issuer'")
+	}
+	if ES256 != alg {
+		t.Errorf("alg should be ES256")
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/knq/pemutil"
@@ -92,4 +93,49 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 	}
 
 	return nil
+}
+
+// peekField looks at an undecoded JWT, JSON decoding the data at pos, and
+// returning the specified field.
+//
+// If the fieldName is not present, then an error will be returned.
+func peekField(buf []byte, fieldName string, pos int) (string, error) {
+	var err error
+
+	// split token
+	ut := UnverifiedToken{}
+	err = DecodeUnverifiedToken(buf, &ut)
+	if err != nil {
+		return "", err
+	}
+
+	// determine position decode
+	var typ string
+	var b []byte
+	switch pos {
+	case 0:
+		typ = "header"
+		b = ut.Header
+	case 1:
+		typ = "payload"
+		b = ut.Payload
+
+	default:
+		panic(fmt.Sprintf("invalid field %d", pos))
+	}
+
+	// b64 decode
+	dec, err := b64.DecodeString(string(b))
+	if err != nil {
+		return "", err
+	}
+
+	// json decode
+	m := make(map[string]interface{})
+	err = json.Unmarshal(dec, &m)
+	if val, ok := m[fieldName]; ok {
+		return fmt.Sprintf("%v", val), nil
+	}
+
+	return "", fmt.Errorf("token %s field %s not present or invalid", fieldName, typ)
 }

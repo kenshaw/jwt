@@ -197,3 +197,43 @@ func Encode(alg Algorithm, signer Signer, obj interface{}) ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
+
+// PeekHeaderField is a utility func that takes the raw JWT, and extracts a
+// specified field from the JWT header.
+func PeekHeaderField(buf []byte, fieldName string) (string, error) {
+	return peekField(buf, fieldName, 0)
+}
+
+// PeekPayloadField is a utility func that takes the raw JWT, and extracts a
+// specified field from the JWT payload (ie, claims).
+func PeekPayloadField(buf []byte, fieldName string) (string, error) {
+	return peekField(buf, fieldName, 1)
+}
+
+// PeekAlgorithmAndIssuer is a utility func that takes the raw JWT, extracts
+// the "alg" (algorithm) from the header, and the standard "iss"
+// (issuer) claim from the
+func PeekAlgorithmAndIssuer(buf []byte) (Algorithm, string, error) {
+	var err error
+	alg := NONE
+
+	// get alg
+	algVal, err := PeekHeaderField(buf, "alg")
+	if err != nil {
+		return NONE, "", err
+	}
+
+	// decode alg
+	err = (&alg).UnmarshalJSON([]byte(`"` + algVal + `"`))
+	if err != nil {
+		return NONE, "", err
+	}
+
+	// get issuer
+	issuer, err := PeekPayloadField(buf, "iss")
+	if err != nil {
+		return NONE, "", err
+	}
+
+	return alg, issuer, nil
+}
