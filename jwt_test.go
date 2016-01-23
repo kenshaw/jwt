@@ -7,6 +7,22 @@ import (
 	"testing"
 )
 
+func enc(v string) string {
+	return b64.EncodeToString([]byte(v))
+}
+
+type sigger struct {
+	signer Signer
+}
+
+func (s *sigger) sn(v string) string {
+	enc, err := s.signer.Sign([]byte(v))
+	if err != nil {
+		panic(err)
+	}
+	return v + `.` + string(enc)
+}
+
 func TestSignAndVerify(t *testing.T) {
 	tests := getTests()
 	for i, test := range tests {
@@ -68,6 +84,48 @@ func TestSignAndVerify(t *testing.T) {
 				t.Errorf("test %d %s should return a non-empty b62 decoded signature", i, test.alg)
 				continue
 			}
+		}
+	}
+}
+
+func TestDecodeErrors(t *testing.T) {
+	signer := PS256.New(PEM{"testdata/rsa.pem"})
+	s := &sigger{signer}
+	//b := &sigger{PS384.New(PEM{"testdata/rsa.pem"})}
+
+	tests := []string{
+		``,
+		`.`,
+		`..`,
+		`{}.`,
+		`{}..`,
+		`{}.{}`,
+		`{}.{}.`,
+		`{}.{}.xyz`,
+		enc(`{}`),
+		enc(`{}`) + `.`,
+		enc(`{}`) + `.` + enc(`{}`),
+		enc(`{}`) + `.` + enc(`{}`) + `.`,
+		s.sn(`{}.{}`),
+		s.sn(enc(`{}`) + `.{}`),
+		s.sn(`{}.` + enc(`{}`)),
+		s.sn(enc(`{}`) + `.` + enc(`{}`)),
+		s.sn(enc(`{alg:}`) + `.` + enc(`{}`)),
+		s.sn(enc(`{alg:""}`) + `.` + enc(`{}`)),
+		s.sn(enc(`{"alg":}`) + `.` + enc(`{}`)),
+		s.sn(enc(`{"alg":123}`) + `.` + enc(`{}`)),
+		s.sn(enc(`{"alg":"ES256"}`) + `.` + enc(`{}`)),
+		s.sn(enc(`{"alg":"none"}`) + `.` + enc(`{}`)),
+		s.sn(enc(`{"alg":"PS256"}`) + `.{}`),
+		s.sn(enc(`{"alg":"PS256"}`) + `.` + enc(``)),
+		s.sn(enc(`{"alg":"PS256"}`) + `.` + enc(`{iss:}`)),
+	}
+
+	for i, test := range tests {
+		tok := Token{}
+		err := Decode(PS256, signer, []byte(test), &tok)
+		if err == nil {
+			t.Errorf("test %d expected no error, got: %v", i, err)
 		}
 	}
 }
@@ -190,10 +248,6 @@ func TestEncode(t *testing.T) {
 			continue
 		}
 	}
-}
-
-func enc(v string) string {
-	return b64.EncodeToString([]byte(v))
 }
 
 func TestPeekErrors(t *testing.T) {
