@@ -91,7 +91,7 @@ func TestSignAndVerify(t *testing.T) {
 func TestDecodeErrors(t *testing.T) {
 	signer := PS256.New(PEM{"testdata/rsa.pem"})
 	s := &sigger{signer}
-	//b := &sigger{PS384.New(PEM{"testdata/rsa.pem"})}
+	b := &sigger{PS384.New(PEM{"testdata/rsa.pem"})}
 
 	tests := []string{
 		``,
@@ -119,6 +119,7 @@ func TestDecodeErrors(t *testing.T) {
 		s.sn(enc(`{"alg":"PS256"}`) + `.{}`),
 		s.sn(enc(`{"alg":"PS256"}`) + `.` + enc(``)),
 		s.sn(enc(`{"alg":"PS256"}`) + `.` + enc(`{iss:}`)),
+		b.sn(enc(`{"alg":"PS256"}`) + `.` + enc(`{"iss":"issuer"}`)),
 	}
 
 	for i, test := range tests {
