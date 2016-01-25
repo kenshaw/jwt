@@ -184,8 +184,9 @@ func buildEncArgs(args []string) ([]byte, error) {
 	// loop over args, splitting on '=', and attempt parsing of value
 	for _, arg := range args {
 		a := strings.SplitN(arg, "=", 2)
-
 		var val interface{}
+
+		// attempt to parse
 		if len(a) == 1 { // assume bool, set as true
 			val = true
 		} else if u, err := strconv.ParseUint(a[1], 10, 64); err == nil {
@@ -201,6 +202,7 @@ func buildEncArgs(args []string) ([]byte, error) {
 		} else { // treat as string
 			val = a[1]
 		}
+
 		m[a[0]] = val
 	}
 
