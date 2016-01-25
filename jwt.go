@@ -199,32 +199,52 @@ func Encode(alg Algorithm, signer Signer, obj interface{}) ([]byte, error) {
 }
 
 // PeekHeaderField is a utility func that takes the raw JWT, and extracts a
-// specified field from the JWT header.
+// specified field from the JWT header. An error will be returned if the
+// fieldName is not present in the decoded header.
 func PeekHeaderField(buf []byte, fieldName string) (string, error) {
 	return peekField(buf, fieldName, 0)
 }
 
 // PeekPayloadField is a utility func that takes the raw JWT, and extracts a
-// specified field from the JWT payload (ie, claims).
+// specified field from the JWT payload (ie, claims). An error will be returend
+// if the fieldName is not present in the decoded payload.
 func PeekPayloadField(buf []byte, fieldName string) (string, error) {
 	return peekField(buf, fieldName, 1)
 }
 
-// PeekAlgorithmAndIssuer is a utility func that takes the raw JWT, extracts
-// the "alg" (algorithm) from the header, and the standard "iss"
-// (issuer) claim from the
-func PeekAlgorithmAndIssuer(buf []byte) (Algorithm, string, error) {
-	var err error
+// PeekAlgorithm is a utility func that takes the raw JWT, extracts the "alg"
+// (ie, the signing algorithm used) from the header, and attempts to decode it
+// into an Algorithm. An error is returend if the algorithm is not specified in
+// the header, or is otherwise invalid.
+func PeekAlgorithm(buf []byte) (Algorithm, error) {
 	alg := NONE
 
 	// get alg
 	algVal, err := PeekHeaderField(buf, "alg")
 	if err != nil {
-		return NONE, "", err
+		return NONE, err
 	}
 
 	// decode alg
 	err = (&alg).UnmarshalJSON([]byte(`"` + algVal + `"`))
+	if err != nil {
+		return NONE, err
+	}
+
+	return alg, nil
+}
+
+// PeekAlgorithmAndIssuer is a utility func that takes the raw JWT, extracts
+// the "alg" (ie, the signing algorithm used) from the header, and the standard
+// "iss" (issuer) claim field from the token payload. An error is returned if
+// the specified header algorithm is not specified or otherwise invalid.
+// Similarly, an error will be returned if the "iss" field is not specified in
+// the payload, or is otherwise invalid.
+func PeekAlgorithmAndIssuer(buf []byte) (Algorithm, string, error) {
+	var err error
+
+	// get algo
+	alg, err := PeekAlgorithm(buf)
 	if err != nil {
 		return NONE, "", err
 	}

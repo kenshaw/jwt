@@ -28,10 +28,10 @@ import (
 )
 
 var (
-	flagEnc = flag.Bool("enc", false, "encode token from json data sent via stdin, or via name=value pairs passed on the command line.")
-	flagDec = flag.Bool("dec", false, "decode token read from stdin")
+	flagEnc = flag.Bool("enc", false, "encode token from json data provided from stdin, or via name=value pairs passed on the command line")
+	flagDec = flag.Bool("dec", false, "decode and verify token read from stdin using the provided key data")
 	flagKey = flag.String("k", "", "path to PEM-encoded file containing key data")
-	flagAlg = flag.String("alg", "", "use specified algorithm")
+	flagAlg = flag.String("alg", "", "override signing algorithm")
 )
 
 func main() {
@@ -46,6 +46,25 @@ func main() {
 		os.Exit(1)
 	}
 
+	// inspect remaining args
+	args := flag.Args()
+	if len(args) > 0 && *flagDec {
+		fmt.Fprintln(os.Stderr, "error: unknown args passed for -dec")
+		os.Exit(1)
+	}
+
+	// if there are command line args and enc, then build js from them
+	var in []byte
+	if len(args) > 0 && *flagEnc {
+		in, err = buildEncArgs(args)
+	} else {
+		in, err = ioutil.ReadAll(os.Stdin)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
 	// read key data
 	pem := pemutil.Store{}
 	err = pemutil.PEM{*flagKey}.Load(pem)
@@ -54,51 +73,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	// set key
+	// determine alg
 	var alg jwt.Algorithm
-
-	// get alg from key
-	if *flagAlg == "" {
+	if *flagAlg != "" {
+		err = (&alg).UnmarshalJSON([]byte(`"` + *flagAlg + `"`))
+	} else if *flagDec {
+		alg, err = jwt.PeekAlgorithm(in)
+	} else {
 		alg, err = getAlgFromKeyData(pem)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
-		}
-	} else {
-		// attempt to decode alg
-		err = json.Unmarshal([]byte(`"`+*flagAlg+`"`), &alg)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
-		}
 	}
-
-	// create signer
-	signer := alg.New(pem)
-
-	// inspect remaining args
-	args := flag.Args()
-	if len(args) > 0 && *flagDec {
-		fmt.Fprintln(os.Stderr, "error: unknown args passed for -dec")
-		os.Exit(1)
-	}
-
-	var in []byte
-
-	// if there are command line args and enc, then build js from them
-	if len(args) > 0 && *flagEnc {
-		in, err = buildEncArgs(args)
-	} else {
-		in, err = ioutil.ReadAll(os.Stdin)
-	}
-
-	// check errors
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// encode, decode, or error
+	// create signer
+	signer := alg.New(pem)
+
+	// encode or decode
 	var out []byte
 	switch {
 	case *flagDec:
@@ -110,7 +102,6 @@ func main() {
 	default:
 		err = errors.New("please specify -enc or -dec")
 	}
-
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
