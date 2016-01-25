@@ -196,6 +196,8 @@ func buildEncArgs(args []string) ([]byte, error) {
 			val = f
 		} else if b, err := strconv.ParseBool(a[1]); err == nil {
 			val = b
+		} else if s, err := strconv.Unquote(a[1]); err == nil {
+			val = s
 		} else { // treat as string
 			val = a[1]
 		}
