@@ -71,7 +71,7 @@ func NewRSASigner(alg Algorithm, method rsaMethod) func(pemutil.Store, crypto.Ha
 
 			// check private key length
 			if priv.N.BitLen() < RSAMinimumBitLen {
-				panic(fmt.Sprintf("NewRSASigner: private key must have minimum length of %d", RSAMinimumBitLen))
+				panic(fmt.Sprintf("NewRSASigner: private key has length %d, must have minimum length of %d", priv.N.BitLen(), RSAMinimumBitLen))
 			}
 		}
 
@@ -83,7 +83,7 @@ func NewRSASigner(alg Algorithm, method rsaMethod) func(pemutil.Store, crypto.Ha
 
 			// check public key length
 			if pub.N.BitLen() < RSAMinimumBitLen {
-				panic(fmt.Sprintf("NewRSASigner: private key must have minimum length of %d", RSAMinimumBitLen))
+				panic(fmt.Sprintf("NewRSASigner: public key has length %d, must have minimum length of %d", pub.N.BitLen(), RSAMinimumBitLen))
 			}
 		}
 
