@@ -76,7 +76,7 @@ func main() {
 	// determine alg
 	var alg jwt.Algorithm
 	if *flagAlg != "" {
-		err = (&alg).UnmarshalJSON([]byte(`"` + *flagAlg + `"`))
+		err = (&alg).UnmarshalText([]byte(*flagAlg))
 	} else if *flagDec {
 		alg, err = jwt.PeekAlgorithm(in)
 	} else {
