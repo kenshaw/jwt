@@ -226,7 +226,7 @@ func PeekAlgorithm(buf []byte) (Algorithm, error) {
 	}
 
 	// decode alg
-	err = (&alg).UnmarshalJSON([]byte(`"` + algVal + `"`))
+	err = (&alg).UnmarshalText([]byte(algVal))
 	if err != nil {
 		return NONE, err
 	}

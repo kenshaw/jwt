@@ -9,7 +9,6 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/knq/pemutil"
 )
@@ -242,20 +241,14 @@ func (alg Algorithm) Decode(signer Signer, buf []byte, obj interface{}) error {
 	return Decode(alg, signer, buf, obj)
 }
 
-// MarshalJSON marshals Algorithm into a storable JSON string.
-func (alg Algorithm) MarshalJSON() ([]byte, error) {
-	return []byte(strconv.Quote(alg.String())), nil
+// MarshalText marshals Algorithm into a standard string.
+func (alg Algorithm) MarshalText() ([]byte, error) {
+	return []byte(alg.String()), nil
 }
 
-// UnmarshalJSON unmarshals a JSON string into the corresponding Algorithm.
-func (alg *Algorithm) UnmarshalJSON(buf []byte) error {
-	// unquote
-	val, err := strconv.Unquote(string(buf))
-	if err != nil {
-		return err
-	}
-
-	switch val {
+// UnmarshalText unmarshals a string into the corresponding Algorithm.
+func (alg *Algorithm) UnmarshalText(buf []byte) error {
+	switch string(buf) {
 	// hmac
 	case "HS256":
 		*alg = HS256
