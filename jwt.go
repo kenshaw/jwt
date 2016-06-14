@@ -206,7 +206,7 @@ func PeekHeaderField(buf []byte, fieldName string) (string, error) {
 }
 
 // PeekPayloadField is a utility func that takes the raw JWT, and extracts a
-// specified field from the JWT payload (ie, claims). An error will be returend
+// specified field from the JWT payload (ie, claims). An error will be returned
 // if the fieldName is not present in the decoded payload.
 func PeekPayloadField(buf []byte, fieldName string) (string, error) {
 	return peekField(buf, fieldName, 1)
@@ -214,7 +214,7 @@ func PeekPayloadField(buf []byte, fieldName string) (string, error) {
 
 // PeekAlgorithm is a utility func that takes the raw JWT, extracts the "alg"
 // (ie, the signing algorithm used) from the header, and attempts to decode it
-// into an Algorithm. An error is returend if the algorithm is not specified in
+// into an Algorithm. An error is returned if the algorithm is not specified in
 // the header, or is otherwise invalid.
 func PeekAlgorithm(buf []byte) (Algorithm, error) {
 	alg := NONE
