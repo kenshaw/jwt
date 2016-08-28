@@ -113,13 +113,12 @@ const (
 
 // algMap is a map of algorithm implementations to its Algorithm.
 var algMap = map[Algorithm]struct {
-	NewFunc func(pemutil.Store, crypto.Hash) Signer
+	NewFunc func(pemutil.Store, crypto.Hash) (Signer, error)
 	Hash    crypto.Hash
 }{
 	// none
-	NONE: {func(pemutil.Store, crypto.Hash) Signer {
-		panic("not implemented")
-		return nil
+	NONE: {func(pemutil.Store, crypto.Hash) (Signer, error) {
+		return nil, errors.New("jwt algorithm none is not implemented")
 	}, crypto.SHA256},
 
 	// HS256 is HMAC + SHA-256
@@ -171,18 +170,14 @@ var algMap = map[Algorithm]struct {
 // Therefore, please pass *BOTH* a public *AND* private key (if the Algorithm
 // calls for it), wrapped by a pemutil.Store or as PEM/pemutil.PEM in order to
 // Encode *AND* Decode JWTs.
-//
-// New will panic if the provided keyset does not provide enough information,
-// or the keyset data cannot be loaded, is invalid, is otherwise incorrect for
-// the Algorithm, or if the associated crypto.Hash (ie, SHA256, SHA384, or
-// SHA512) is not available for the platform.
-func (alg Algorithm) New(keyset interface{}) Signer {
+func (alg Algorithm) New(keyset interface{}) (Signer, error) {
+	var err error
+
 	a := algMap[alg]
 
 	// check hash
 	if !a.Hash.Available() {
-		panic(fmt.Sprintf("%s.New: crypto hash unavailable", alg))
-		return nil
+		return nil, fmt.Errorf("%s.New: crypto hash unavailable", alg)
 	}
 
 	var store pemutil.Store
@@ -194,9 +189,15 @@ func (alg Algorithm) New(keyset interface{}) Signer {
 
 	// pem data
 	case pemutil.PEM:
-		store = loadKeysFromPEM(p)
+		store, err = loadKeysFromPEM(p)
+		if err != nil {
+			return nil, err
+		}
 	case PEM:
-		store = loadKeysFromPEM(pemutil.PEM(p))
+		store, err = loadKeysFromPEM(pemutil.PEM(p))
+		if err != nil {
+			return nil, err
+		}
 
 	// raw key
 	case []byte:
@@ -215,8 +216,7 @@ func (alg Algorithm) New(keyset interface{}) Signer {
 		store = pemutil.Store{pemutil.PublicKey: p}
 
 	default:
-		panic(fmt.Sprintf("%s.New: unrecognized keyset type", alg))
-		return nil
+		return nil, fmt.Errorf("%s.New: unrecognized keyset type", alg)
 	}
 
 	return a.NewFunc(store, a.Hash)

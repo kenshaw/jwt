@@ -24,7 +24,7 @@ type eccSigner struct {
 }
 
 // NewEllipticSigner creates an Elliptic Curve Signer for the specified curve.
-func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(pemutil.Store, crypto.Hash) Signer {
+func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(pemutil.Store, crypto.Hash) (Signer, error) {
 	curveBitSize := curve.Params().BitSize
 
 	// precompute curve key len
@@ -33,7 +33,7 @@ func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(pemutil.Store, 
 		keyLen++
 	}
 
-	return func(store pemutil.Store, hash crypto.Hash) Signer {
+	return func(store pemutil.Store, hash crypto.Hash) (Signer, error) {
 		var ok bool
 		var privRaw, pubRaw interface{}
 		var priv *ecdsa.PrivateKey
@@ -42,25 +42,25 @@ func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(pemutil.Store, 
 		// check private key
 		if privRaw, ok = store[pemutil.ECPrivateKey]; ok {
 			if priv, ok = privRaw.(*ecdsa.PrivateKey); !ok {
-				panic("NewEllipticSigner: private key must be a *ecdsa.PrivateKey")
+				return nil, errors.New("NewEllipticSigner: private key must be a *ecdsa.PrivateKey")
 			}
 
 			// check curve type matches private key curve type
 			if curveBitSize != priv.Curve.Params().BitSize {
-				panic(fmt.Sprintf("NewEllipticSigner: private key have bit size %d", curve.Params().BitSize))
+				return nil, fmt.Errorf("NewEllipticSigner: private key have bit size %d", curve.Params().BitSize)
 			}
 		}
 
 		// check public key
 		if pubRaw, ok = store[pemutil.PublicKey]; ok {
 			if pub, ok = pubRaw.(*ecdsa.PublicKey); !ok {
-				panic("NewEllipticSigner: public key must be a *ecdsa.PublicKey")
+				return nil, errors.New("NewEllipticSigner: public key must be a *ecdsa.PublicKey")
 			}
 		}
 
 		// check that either a private or public key has been provided
 		if priv == nil && pub == nil {
-			panic("NewEllipticSigner: either a private key or a public key must be provided")
+			return nil, errors.New("NewEllipticSigner: either a private key or a public key must be provided")
 		}
 
 		return &eccSigner{
@@ -70,7 +70,7 @@ func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(pemutil.Store, 
 			priv:   priv,
 			pub:    pub,
 			keyLen: keyLen,
-		}
+		}, nil
 	}
 }
 

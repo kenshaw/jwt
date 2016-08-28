@@ -88,7 +88,11 @@ func main() {
 	}
 
 	// create signer
-	signer := alg.New(pem)
+	signer, err := alg.New(pem)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 
 	// encode or decode
 	var out []byte

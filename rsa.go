@@ -56,8 +56,8 @@ type rsaSigner struct {
 
 // NewRSASigner creates an RSA Signer for the specified Algorithm and RSA
 // method.
-func NewRSASigner(alg Algorithm, method rsaMethod) func(pemutil.Store, crypto.Hash) Signer {
-	return func(store pemutil.Store, hash crypto.Hash) Signer {
+func NewRSASigner(alg Algorithm, method rsaMethod) func(pemutil.Store, crypto.Hash) (Signer, error) {
+	return func(store pemutil.Store, hash crypto.Hash) (Signer, error) {
 		var ok bool
 		var privRaw, pubRaw interface{}
 		var priv *rsa.PrivateKey
@@ -66,30 +66,30 @@ func NewRSASigner(alg Algorithm, method rsaMethod) func(pemutil.Store, crypto.Ha
 		// check private key
 		if privRaw, ok = store[pemutil.RSAPrivateKey]; ok {
 			if priv, ok = privRaw.(*rsa.PrivateKey); !ok {
-				panic("NewRSASigner: private key must be a *rsa.PrivateKey")
+				return nil, errors.New("NewRSASigner: private key must be a *rsa.PrivateKey")
 			}
 
 			// check private key length
 			if priv.N.BitLen() < RSAMinimumBitLen {
-				panic(fmt.Sprintf("NewRSASigner: private key has length %d, must have minimum length of %d", priv.N.BitLen(), RSAMinimumBitLen))
+				return nil, fmt.Errorf("NewRSASigner: private key has length %d, must have minimum length of %d", priv.N.BitLen(), RSAMinimumBitLen)
 			}
 		}
 
 		// check public key
 		if pubRaw, ok = store[pemutil.PublicKey]; ok {
 			if pub, ok = pubRaw.(*rsa.PublicKey); !ok {
-				panic("NewRSASigner: public key must be a *rsa.PublicKey")
+				return nil, errors.New("NewRSASigner: public key must be a *rsa.PublicKey")
 			}
 
 			// check public key length
 			if pub.N.BitLen() < RSAMinimumBitLen {
-				panic(fmt.Sprintf("NewRSASigner: public key has length %d, must have minimum length of %d", pub.N.BitLen(), RSAMinimumBitLen))
+				return nil, fmt.Errorf("NewRSASigner: public key has length %d, must have minimum length of %d", pub.N.BitLen(), RSAMinimumBitLen)
 			}
 		}
 
 		// check that either a private or public key has been provided
 		if priv == nil && pub == nil {
-			panic("NewRSASigner: either a private key or a public key must be provided")
+			return nil, errors.New("NewRSASigner: either a private key or a public key must be provided")
 		}
 
 		return &rsaSigner{
@@ -98,7 +98,7 @@ func NewRSASigner(alg Algorithm, method rsaMethod) func(pemutil.Store, crypto.Ha
 			hash:   hash,
 			priv:   priv,
 			pub:    pub,
-		}
+		}, nil
 	}
 }
 

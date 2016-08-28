@@ -27,17 +27,15 @@ var (
 
 // loadKeysFromPEM loads keys in the PEM, returning a pemutil.Store containing
 // the loaded crypto primitives (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc).
-//
-// loadKeysFromPEM will panic if an error is encountered when calling pem.Load.
-func loadKeysFromPEM(pem pemutil.PEM) pemutil.Store {
+func loadKeysFromPEM(pem pemutil.PEM) (pemutil.Store, error) {
 	// attempt to load crypto primitives
 	store := pemutil.Store{}
 	err := pem.Load(store)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return store
+	return store, nil
 }
 
 // getFieldWithTag lookups jwt tag, with specified tagName on obj, returning
@@ -61,8 +59,6 @@ func getFieldWithTag(obj interface{}, tagName string) *reflect.Value {
 // defaultObj, then the obj is set to the defaultObj, otherwise an attempt is
 // made to json.Decode the buf into obj.
 func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defaultObj interface{}) error {
-	var err error
-
 	// reflect values
 	objValElem := reflect.ValueOf(obj).Elem()
 	defaultObjValElem := reflect.ValueOf(defaultObj).Elem()
@@ -87,12 +83,7 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 	}
 
 	// decode json
-	err = json.Unmarshal(buf, obj)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return json.Unmarshal(buf, obj)
 }
 
 // peekField looks at an undecoded JWT, JSON decoding the data at pos, and
@@ -121,7 +112,7 @@ func peekField(buf []byte, fieldName string, pos int) (string, error) {
 		b = ut.Payload
 
 	default:
-		panic(fmt.Sprintf("invalid field %d", pos))
+		return "", fmt.Errorf("invalid field %d", pos)
 	}
 
 	// b64 decode
@@ -133,6 +124,10 @@ func peekField(buf []byte, fieldName string, pos int) (string, error) {
 	// json decode
 	m := make(map[string]interface{})
 	err = json.Unmarshal(dec, &m)
+	if err != nil {
+		return "", err
+	}
+
 	if val, ok := m[fieldName]; ok {
 		return fmt.Sprintf("%v", val), nil
 	}

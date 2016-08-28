@@ -20,7 +20,10 @@ func main() {
 	// RSA-PKCS1v15: RS256, RS384, RS512
 	// ECC:          ES256, ES384, ES512
 	// RSA-SSA-PSS:  PS256, PS384, PS512
-	ps384 := jwt.PS384.New(jwt.PEM{"rsa-private.pem", "rsa-public.pem"})
+	ps384, err := jwt.PS384.New(jwt.PEM{"rsa-private.pem", "rsa-public.pem"})
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	// calculate an expiration time we have to clear the nanoseconds, otherwise
 	// DeepEqual won't be true later, as the precision in the JWT standard for

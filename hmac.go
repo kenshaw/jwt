@@ -16,27 +16,27 @@ type hmacSigner struct {
 }
 
 // NewHMACSigner creates a HMAC Signer for the specified Algorithm.
-func NewHMACSigner(alg Algorithm) func(pemutil.Store, crypto.Hash) Signer {
-	return func(store pemutil.Store, hash crypto.Hash) Signer {
+func NewHMACSigner(alg Algorithm) func(pemutil.Store, crypto.Hash) (Signer, error) {
+	return func(store pemutil.Store, hash crypto.Hash) (Signer, error) {
 		var ok bool
 		var keyRaw interface{}
 		var key []byte
 
 		// check private key
 		if keyRaw, ok = store[pemutil.PrivateKey]; !ok {
-			panic("NewHMACSigner: private key must be provided")
+			return nil, errors.New("NewHMACSigner: private key must be provided")
 		}
 
 		// check key type
 		if key, ok = keyRaw.([]byte); !ok {
-			panic("NewHMACSigner: private key must be type []byte")
+			return nil, errors.New("NewHMACSigner: private key must be type []byte")
 		}
 
 		return &hmacSigner{
 			alg:  alg,
 			hash: hash,
 			key:  key,
-		}
+		}, nil
 	}
 }
 

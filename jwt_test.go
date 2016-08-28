@@ -40,7 +40,11 @@ func TestSignAndVerify(t *testing.T) {
 		}
 
 		// gen signature
-		signer := test.alg.New(p)
+		signer, err := test.alg.New(p)
+		if err != nil {
+			t.Errorf("expected no error, got: %v", err)
+			continue
+		}
 
 		// only test valid sigs
 		if test.valid {
@@ -89,9 +93,19 @@ func TestSignAndVerify(t *testing.T) {
 }
 
 func TestDecodeErrors(t *testing.T) {
-	signer := PS256.New(PEM{"testdata/rsa.pem"})
+	signer, err := PS256.New(PEM{"testdata/rsa.pem"})
+	if err != nil {
+		t.Errorf("expected no error, got: %v", err)
+		return
+	}
+
 	s := &sigger{signer}
-	b := &sigger{PS384.New(PEM{"testdata/rsa.pem"})}
+	a, err := PS384.New(PEM{"testdata/rsa.pem"})
+	if err != nil {
+		t.Errorf("expected no error, got: %v", err)
+		return
+	}
+	b := &sigger{a}
 
 	tests := []string{
 		``,
@@ -148,7 +162,11 @@ func TestDecode(t *testing.T) {
 		}
 
 		// gen signature
-		signer := test.alg.New(p)
+		signer, err := test.alg.New(p)
+		if err != nil {
+			t.Errorf("expected no error, got: %v", err)
+			return
+		}
 
 		// split token
 		tok := strings.Split(test.tok, string(tokenSep))
@@ -158,7 +176,7 @@ func TestDecode(t *testing.T) {
 		}
 
 		t0 := Token{}
-		err := signer.Decode([]byte(test.tok), &t0)
+		err = signer.Decode([]byte(test.tok), &t0)
 		switch {
 		case test.valid && err != nil:
 			t.Errorf("test %d %s expected no error, got: %v", i, test.alg, err)
@@ -201,7 +219,11 @@ func TestEncode(t *testing.T) {
 		}
 
 		// gen signature
-		signer := test.alg.New(p)
+		signer, err := test.alg.New(p)
+		if err != nil {
+			t.Errorf("test %d %s expected no error, got: %v", i, test.alg, err)
+			continue
+		}
 
 		b0, err := signer.Encode(test.exp)
 		if err != nil {

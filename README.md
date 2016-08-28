@@ -29,92 +29,95 @@ package main
 //go:generate openssl rsa -in rsa-private.pem -outform PEM -pubout -out rsa-public.pem
 
 import (
-    "fmt"
-    "log"
-    "reflect"
-    "time"
+	"fmt"
+	"log"
+	"reflect"
+	"time"
 
-    "github.com/knq/jwt"
+	"github.com/knq/jwt"
 )
 
 func main() {
-    // create PS384 with private and public key
-    // in addition, there are the other standard JWT encryption implementations:
-    // HMAC:         HS256, HS384, HS512
-    // RSA-PKCS1v15: RS256, RS384, RS512
-    // ECC:          ES256, ES384, ES512
-    // RSA-SSA-PSS:  PS256, PS384, PS512
-    ps384 := jwt.PS384.New(jwt.PEM{"rsa-private.pem", "rsa-public.pem"})
+	// create PS384 with private and public key
+	// in addition, there are the other standard JWT encryption implementations:
+	// HMAC:         HS256, HS384, HS512
+	// RSA-PKCS1v15: RS256, RS384, RS512
+	// ECC:          ES256, ES384, ES512
+	// RSA-SSA-PSS:  PS256, PS384, PS512
+	ps384, err := jwt.PS384.New(jwt.PEM{"rsa-private.pem", "rsa-public.pem"})
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-    // calculate an expiration time we have to clear the nanoseconds, otherwise
-    // DeepEqual won't be true later, as the precision in the JWT standard for
-    // time is only seconds.
-    t := time.Now().Add(14 * 24 * time.Hour)
-    t = t.Add(time.Duration(-t.Nanosecond()))
+	// calculate an expiration time we have to clear the nanoseconds, otherwise
+	// DeepEqual won't be true later, as the precision in the JWT standard for
+	// time is only seconds.
+	t := time.Now().Add(14 * 24 * time.Hour)
+	t = t.Add(time.Duration(-t.Nanosecond()))
 
-    // wrap expiration time as jwt.ClaimsTime
-    expr := jwt.ClaimsTime(t)
+	// wrap expiration time as jwt.ClaimsTime
+	expr := jwt.ClaimsTime(t)
 
-    // create claims using provided jwt.Claims
-    c0 := jwt.Claims{
-        Issuer:     "user@example.com",
-        Audience:   "client@example.com",
-        Expiration: &expr,
-    }
-    fmt.Printf("Claims: %+v\n\n", c0)
+	// create claims using provided jwt.Claims
+	c0 := jwt.Claims{
+		Issuer:     "user@example.com",
+		Audience:   "client@example.com",
+		Expiration: &expr,
+	}
+	fmt.Printf("Claims: %+v\n\n", c0)
 
-    // encode token
-    buf, err := ps384.Encode(&c0)
-    if err != nil {
-        log.Fatalln(err)
-    }
-    fmt.Printf("Encoded token:\n\n%s\n\n", string(buf))
+	// encode token
+	buf, err := ps384.Encode(&c0)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Printf("Encoded token:\n\n%s\n\n", string(buf))
 
-    // decode the generated token and verify
-    c1 := jwt.Claims{}
-    err = ps384.Decode(buf, &c1)
-    if err != nil {
-        // if the signature was bad, the err would not be nil
-        log.Fatalln(err)
-    }
-    if reflect.DeepEqual(c0, c1) {
-        fmt.Printf("Claims Match! Decoded claims: %+v\n\n", c1)
-    }
+	// decode the generated token and verify
+	c1 := jwt.Claims{}
+	err = ps384.Decode(buf, &c1)
+	if err != nil {
+		// if the signature was bad, the err would not be nil
+		log.Fatalln(err)
+	}
+	if reflect.DeepEqual(c0, c1) {
+		fmt.Printf("Claims Match! Decoded claims: %+v\n\n", c1)
+	}
 
-    fmt.Println("----------------------------------------------")
+	fmt.Println("----------------------------------------------")
 
-    // use custom claims
-    c3 := map[string]interface{}{
-        "aud": "my audience",
-        "http://example/api/write": true,
-    }
-    fmt.Printf("My Custom Claims: %+v\n\n", c3)
+	// use custom claims
+	c3 := map[string]interface{}{
+		"aud": "my audience",
+		"http://example/api/write": true,
+	}
+	fmt.Printf("My Custom Claims: %+v\n\n", c3)
 
-    buf, err = ps384.Encode(&c3)
-    if err != nil {
-        log.Fatalln(err)
-    }
-    fmt.Printf("Encoded token with custom claims:\n\n%s\n\n", string(buf))
+	buf, err = ps384.Encode(&c3)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Printf("Encoded token with custom claims:\n\n%s\n\n", string(buf))
 
-    // decode custom claims
-    c4 := myClaims{}
-    err = ps384.Decode(buf, &c4)
-    if err != nil {
-        log.Fatalln(err)
-    }
-    if c4.Audience == "my audience" {
-        fmt.Printf("Decoded custom claims: %+v\n\n", c1)
-    }
-    if c4.WriteScope {
-        fmt.Println("myClaims custom claims has write scope!")
-    }
+	// decode custom claims
+	c4 := myClaims{}
+	err = ps384.Decode(buf, &c4)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if c4.Audience == "my audience" {
+		fmt.Printf("Decoded custom claims: %+v\n\n", c1)
+	}
+	if c4.WriteScope {
+		fmt.Println("myClaims custom claims has write scope!")
+	}
 }
 
 // or use any type that the standard encoding/json library recognizes as a
 // payload (you can also "extend" jwt.Claims in this fashion):
 type myClaims struct {
-    jwt.Claims
-    WriteScope bool `json:"http://example/api/write"`
+	jwt.Claims
+	WriteScope bool `json:"http://example/api/write"`
 }
 ```
 
@@ -134,5 +137,5 @@ echo "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJmb28iOiJiYXIifQ.FhkiHkoESI_cG3NPig
 jwt -k ./testdata/rsa.pem -enc iss=issuer nbf=$(date +%s) | jwt -k ./testdata/rsa.pem -dec
 
 # specify algorithm -- this will error since the token here is encoded using RS256, not RS384
-echo "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJmb28iOiJiYXIifQ.FhkiHkoESI_cG3NPigFrxEk9Z60_oXrOT2vGm9Pn6RDgYNovYORQmmA0zs1AoAOf09ly2Nx2YAg6ABqAYga1AcMFkJljwxTT5fYphTuqpWdy4BELeSYJx5Ty2gmr8e7RonuUztrdD5WfPqLKMm1Ozp_T6zALpRmwTIW0QPnaBXaQD90FplAg46Iy1UlDKr-Eupy0i5SLch5Q-p2ZpaL_5fnTIUDlxC3pWhJTyx_71qDI-mAA_5lE_VdroOeflG56sSmDxopPEG3bFlSu1eowyBfxtu0_CuVd-M42RU75Zc4Gsj6uV77MBtbMrf4_7M_NUTSgoIF3fRqxrj0NzihIBg" | jwt -k ./testdata/rsa.pem -dec -alg RS384 
+echo "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJmb28iOiJiYXIifQ.FhkiHkoESI_cG3NPigFrxEk9Z60_oXrOT2vGm9Pn6RDgYNovYORQmmA0zs1AoAOf09ly2Nx2YAg6ABqAYga1AcMFkJljwxTT5fYphTuqpWdy4BELeSYJx5Ty2gmr8e7RonuUztrdD5WfPqLKMm1Ozp_T6zALpRmwTIW0QPnaBXaQD90FplAg46Iy1UlDKr-Eupy0i5SLch5Q-p2ZpaL_5fnTIUDlxC3pWhJTyx_71qDI-mAA_5lE_VdroOeflG56sSmDxopPEG3bFlSu1eowyBfxtu0_CuVd-M42RU75Zc4Gsj6uV77MBtbMrf4_7M_NUTSgoIF3fRqxrj0NzihIBg" | jwt -k ./testdata/rsa.pem -dec -alg RS384
 ```
