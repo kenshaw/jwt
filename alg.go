@@ -164,12 +164,8 @@ var algMap = map[Algorithm]struct {
 // *rsa.{PrivateKey,PublicKey}, *ecdsa.{PrivateKey,PublicKey}, or []byte.
 //
 // PLEASE NOTE: if a calling package *DOES NOT* provide a private key, tokens
-// cannot be Encode'd. Similarly, if no public key is provided, tokens *CANNOT*
-// be Decode'd (ie, verified). Additionally, as this is a naive implementation,
-// no attempt is made to generate or derive a public key from a private key.
-// Therefore, please pass *BOTH* a public *AND* private key (if the Algorithm
-// calls for it), wrapped by a pemutil.Store or as PEM/pemutil.PEM in order to
-// Encode *AND* Decode JWTs.
+// cannot be Encode'd. Please note that pemutil will automatically generate the
+// public key for a provided private key if none was provided in the keyset.
 func (alg Algorithm) New(keyset interface{}) (Signer, error) {
 	var err error
 
@@ -217,6 +213,12 @@ func (alg Algorithm) New(keyset interface{}) (Signer, error) {
 
 	default:
 		return nil, fmt.Errorf("%s.New: unrecognized keyset type", alg)
+	}
+
+	// generate public keys
+	err = pemutil.GeneratePublicKeys(store)
+	if err != nil {
+		return nil, err
 	}
 
 	return a.NewFunc(store, a.Hash)
