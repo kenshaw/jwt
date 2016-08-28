@@ -113,8 +113,8 @@ const (
 
 // algMap is a map of algorithm implementations to its Algorithm.
 var algMap = map[Algorithm]struct {
-	NewFunc func(pemutil.Store, crypto.Hash) (Signer, error)
-	Hash    crypto.Hash
+	newFunc func(pemutil.Store, crypto.Hash) (Signer, error)
+	hash    crypto.Hash
 }{
 	// none
 	NONE: {func(pemutil.Store, crypto.Hash) (Signer, error) {
@@ -172,7 +172,7 @@ func (alg Algorithm) New(keyset interface{}) (Signer, error) {
 	a := algMap[alg]
 
 	// check hash
-	if !a.Hash.Available() {
+	if !a.hash.Available() {
 		return nil, fmt.Errorf("%s.New: crypto hash unavailable", alg)
 	}
 
@@ -221,7 +221,7 @@ func (alg Algorithm) New(keyset interface{}) (Signer, error) {
 		return nil, err
 	}
 
-	return a.NewFunc(store, a.Hash)
+	return a.newFunc(store, a.hash)
 }
 
 // Header builds the JWT header for the algorithm.
