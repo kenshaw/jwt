@@ -238,7 +238,11 @@ func doEnc(signer jwt.Signer, in []byte) ([]byte, error) {
 
 	// make sure its valid json first
 	m := make(map[string]interface{})
-	err = json.Unmarshal(in, &m)
+
+	// do the initial decode
+	d := json.NewDecoder(bytes.NewBuffer(in))
+	d.UseNumber()
+	err = d.Decode(&m)
 	if err != nil {
 		return nil, err
 	}
