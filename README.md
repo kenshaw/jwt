@@ -29,9 +29,11 @@ package main
 //go:generate openssl rsa -in rsa-private.pem -outform PEM -pubout -out rsa-public.pem
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/knq/jwt"
@@ -49,20 +51,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// calculate an expiration time we have to clear the nanoseconds, otherwise
-	// DeepEqual won't be true later, as the precision in the JWT standard for
-	// time is only seconds.
-	t := time.Now().Add(14 * 24 * time.Hour)
-	t = t.Add(time.Duration(-t.Nanosecond()))
-
-	// wrap expiration time as jwt.ClaimsTime
-	expr := jwt.ClaimsTime(t)
+	// calculate an expiration time
+	expr := time.Now().Add(14 * 24 * time.Hour)
 
 	// create claims using provided jwt.Claims
 	c0 := jwt.Claims{
 		Issuer:     "user@example.com",
 		Audience:   "client@example.com",
-		Expiration: &expr,
+		Expiration: json.Number(strconv.FormatInt(expr.Unix(), 10)),
 	}
 	fmt.Printf("Claims: %+v\n\n", c0)
 

@@ -2,16 +2,15 @@ package jwt
 
 import (
 	"encoding/json"
+	"strconv"
 	"testing"
 	"time"
 )
 
 func TestClaimsMarshalUnmarshal(t *testing.T) {
 	tm := time.Now().Add(14 * time.Hour)
-	tm = tm.Add(time.Duration(-tm.Nanosecond()))
-
-	expr := ClaimsTime(tm)
-	c := Claims{Issuer: "issuer", Expiration: &expr}
+	expr := json.Number(strconv.FormatInt(tm.Unix(), 10))
+	c := Claims{Issuer: "issuer", Expiration: expr}
 
 	buf, err := json.Marshal(&c)
 	if err != nil {
@@ -23,7 +22,7 @@ func TestClaimsMarshalUnmarshal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	if expr != *c0.Expiration {
+	if expr != c0.Expiration {
 		t.Errorf("expr and c0.Expiration should equal -- %v / %v", expr, c0.Expiration)
 	}
 

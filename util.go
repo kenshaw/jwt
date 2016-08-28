@@ -87,7 +87,7 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 }
 
 // peekField looks at an undecoded JWT, JSON decoding the data at pos, and
-// returning the specified field.
+// returning the specified field's value as string.
 //
 // If the fieldName is not present, then an error will be returned.
 func peekField(buf []byte, fieldName string, pos int) (string, error) {

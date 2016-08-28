@@ -2,38 +2,13 @@ package jwt
 
 import (
 	"bytes"
-	"fmt"
-	"strconv"
-	"time"
+	"encoding/json"
 )
 
 // Header is a JWT header.
 type Header struct {
 	Type      string    `json:"typ"`
 	Algorithm Algorithm `json:"alg"`
-}
-
-// ClaimsTime wraps time.Time for serializing/deserializing time as per the JWT
-// spec.
-type ClaimsTime time.Time
-
-// MarshalJSON marshals the ClaimsTime as a JSON int, representing the number
-// of seconds elapsed since January 1, 1970 UTC.
-func (ct ClaimsTime) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%d", time.Time(ct).Unix())), nil
-}
-
-// UnmarshalJSON unmarshals a number into the ClaimsTime. The number represents
-// the number of seconds since January 1, 1970 UTC.
-func (ct *ClaimsTime) UnmarshalJSON(buf []byte) error {
-	f, err := strconv.ParseFloat(string(buf), 64)
-	if err != nil {
-		return err
-	}
-
-	*ct = ClaimsTime(time.Unix(int64(f), 0))
-
-	return nil
 }
 
 // Claims is a type containing the registered JWT claims.
@@ -51,14 +26,14 @@ type Claims struct {
 
 	// Expiration ("exp") identifies the expiration time on or after which the
 	// JWT MUST NOT be accepted for processing.
-	Expiration *ClaimsTime `json:"exp,omitempty"`
+	Expiration json.Number `json:"exp,omitempty"`
 
 	// NotBefore ("nbf") identifies the time before which the JWT MUST NOT be
 	// accepted for processing.
-	NotBefore *ClaimsTime `json:"nbf,omitempty"`
+	NotBefore json.Number `json:"nbf,omitempty"`
 
 	// IssuedAt ("iat") identifies the time at which the JWT was issued.
-	IssuedAt *ClaimsTime `json:"iat,omitempty"`
+	IssuedAt json.Number `json:"iat,omitempty"`
 
 	// JwtID ("jti") provides a unique identifier for the JWT.
 	JwtID string `json:"jti,omitempty"`
