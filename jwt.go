@@ -75,9 +75,7 @@ func Decode(alg Algorithm, signer Signer, buf []byte, obj interface{}) error {
 
 	// json decode header
 	header := Header{}
-	decoder := json.NewDecoder(bytes.NewBuffer(headerBuf))
-	decoder.UseNumber()
-	err = decoder.Decode(&header)
+	err = json.Unmarshal(headerBuf, &header)
 	if err != nil {
 		return err
 	}

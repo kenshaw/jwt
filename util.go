@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -83,7 +84,9 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 	}
 
 	// decode json
-	return json.Unmarshal(buf, obj)
+	d := json.NewDecoder(bytes.NewBuffer(buf))
+	d.UseNumber()
+	return d.Decode(obj)
 }
 
 // peekField looks at an undecoded JWT, JSON decoding the data at pos, and
