@@ -22,15 +22,15 @@ type rsaMethod struct {
 	Verify func(*rsa.PublicKey, crypto.Hash, []byte, []byte) error
 }
 
-// PKCS1v15RSAMethod provides a RSA method that signs and verifies with
+// rsaMethodPKCS1v15 provides a RSA method that signs and verifies with
 // PKCS1v15.
-var PKCS1v15RSAMethod = rsaMethod{
+var rsaMethodPKCS1v15 = rsaMethod{
 	Sign:   rsa.SignPKCS1v15,
 	Verify: rsa.VerifyPKCS1v15,
 }
 
-// PSSRSAMethod provides a RSA method that signs and verifies with PSS.
-var PSSRSAMethod = rsaMethod{
+// rsaMethodPSS provides a RSA method that signs and verifies with PSS.
+var rsaMethodPSS = rsaMethod{
 	Sign: func(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, hashed []byte) ([]byte, error) {
 		return rsa.SignPSS(rand, priv, hash, hashed, &rsa.PSSOptions{
 			SaltLength: rsa.PSSSaltLengthAuto,

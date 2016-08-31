@@ -131,13 +131,13 @@ var algMap = map[Algorithm]struct {
 	HS512: {NewHMACSigner(HS512), crypto.SHA512},
 
 	// RS256 is RSASSA-PKCS1-V1_5 + SHA-256
-	RS256: {NewRSASigner(RS256, PKCS1v15RSAMethod), crypto.SHA256},
+	RS256: {NewRSASigner(RS256, rsaMethodPKCS1v15), crypto.SHA256},
 
 	// RS384 is RSASSA-PKCS1-V1_5 + SHA-384
-	RS384: {NewRSASigner(RS384, PKCS1v15RSAMethod), crypto.SHA384},
+	RS384: {NewRSASigner(RS384, rsaMethodPKCS1v15), crypto.SHA384},
 
 	// RS512 is RSASSA-PKCS1-V1_5 + SHA-512
-	RS512: {NewRSASigner(RS512, PKCS1v15RSAMethod), crypto.SHA512},
+	RS512: {NewRSASigner(RS512, rsaMethodPKCS1v15), crypto.SHA512},
 
 	// ES256 is ECDSA P-256 + SHA-256
 	ES256: {NewEllipticSigner(ES256, elliptic.P256()), crypto.SHA256},
@@ -149,13 +149,13 @@ var algMap = map[Algorithm]struct {
 	ES512: {NewEllipticSigner(ES512, elliptic.P521()), crypto.SHA512},
 
 	// PS256 is RSASSA-PSS + SHA-256
-	PS256: {NewRSASigner(PS256, PSSRSAMethod), crypto.SHA256},
+	PS256: {NewRSASigner(PS256, rsaMethodPSS), crypto.SHA256},
 
 	// PS384 is RSASSA-PSS + SHA-384
-	PS384: {NewRSASigner(PS384, PSSRSAMethod), crypto.SHA384},
+	PS384: {NewRSASigner(PS384, rsaMethodPSS), crypto.SHA384},
 
 	// PS512 is RSASSA-PSS + SHA-512
-	PS512: {NewRSASigner(PS512, PSSRSAMethod), crypto.SHA512},
+	PS512: {NewRSASigner(PS512, rsaMethodPSS), crypto.SHA512},
 }
 
 // New creates a Signer using the supplied keyset.
