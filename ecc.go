@@ -157,6 +157,12 @@ func (es *eccSigner) Verify(buf, sig []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// check decoded length
+	if len(dec) != 2*es.keyLen {
+		return nil, ErrInvalidSignature
+	}
+
 	r := big.NewInt(0).SetBytes(dec[:es.keyLen])
 	s := big.NewInt(0).SetBytes(dec[es.keyLen:])
 
