@@ -39,7 +39,8 @@ type Claims struct {
 	JwtID string `json:"jti,omitempty"`
 }
 
-// Token is a JWT token, comprising header, payload (ie, claims), and signature.
+// Token is a JWT token, comprising header, payload (ie, claims), and
+// signature.
 type Token struct {
 	Header    Header `jwt:"header"`
 	Payload   Claims `jwt:"payload"`

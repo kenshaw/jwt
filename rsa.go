@@ -165,7 +165,7 @@ func (rs *rsaSigner) Verify(buf, sig []byte) ([]byte, error) {
 	return dec, nil
 }
 
-// Encode encodes obj as a token.
+// Encode serializes the JSON marshalable obj data as a JWT.
 func (rs *rsaSigner) Encode(obj interface{}) ([]byte, error) {
 	return rs.alg.Encode(rs, obj)
 }

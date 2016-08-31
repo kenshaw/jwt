@@ -1,6 +1,6 @@
 package jwt
 
-//go:generate stringer -type Algorithm -output alg_string.go alg.go
+//go:generate stringer -type Algorithm -output alg_string.go .
 
 import (
 	"crypto"

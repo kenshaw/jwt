@@ -97,7 +97,7 @@ func (hs *hmacSigner) Verify(buf, sig []byte) ([]byte, error) {
 	return dec, nil
 }
 
-// Encode encodes obj as a JSON token.
+// Encode serializes the JSON marshalable obj data as a JWT.
 func (hs *hmacSigner) Encode(obj interface{}) ([]byte, error) {
 	return hs.alg.Encode(hs, obj)
 }

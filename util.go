@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	// b64 is the base64 config used for encoding/decoding the jwt parts.
+	// b64 is the base64 encoding config used for encoding/decoding jwt
+	// parts.
 	b64 = base64.URLEncoding.WithPadding(base64.NoPadding)
 
 	// ErrInvalidSignature is the error when a signature is invalid.
@@ -89,11 +90,23 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 	return d.Decode(obj)
 }
 
+// fieldPosition are the different field positions.
+//
+// Used in conjunction with peekField.
+type fieldPosition int
+
+const (
+	fieldPositionHeader fieldPosition = iota
+	fieldPositionPayload
+
+//	fieldPositionSignature
+)
+
 // peekField looks at an undecoded JWT, JSON decoding the data at pos, and
 // returning the specified field's value as string.
 //
 // If the fieldName is not present, then an error will be returned.
-func peekField(buf []byte, fieldName string, pos int) (string, error) {
+func peekField(buf []byte, fieldName string, pos fieldPosition) (string, error) {
 	var err error
 
 	// split token
@@ -107,10 +120,10 @@ func peekField(buf []byte, fieldName string, pos int) (string, error) {
 	var typ string
 	var b []byte
 	switch pos {
-	case 0:
+	case fieldPositionHeader:
 		typ = "header"
 		b = ut.Header
-	case 1:
+	case fieldPositionPayload:
 		typ = "payload"
 		b = ut.Payload
 

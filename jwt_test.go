@@ -15,10 +15,12 @@ type sigger struct {
 	signer Signer
 }
 
-func (s *sigger) sn(v string) string {
+// sn signs a string for testing purposes
+func (s *sigger) sn(v string, t *testing.T) string {
 	enc, err := s.signer.Sign([]byte(v))
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
+		return ""
 	}
 	return v + `.` + string(enc)
 }
@@ -64,7 +66,7 @@ func TestSignAndVerify(t *testing.T) {
 				t.Errorf("test %d %s expected no error, got: %v", i, test.alg, err)
 				continue
 			}
-			if sig == nil || len(sig) == 0 {
+			if len(sig) == 0 {
 				t.Errorf("test %d %s sig should not be nil or empty byte slice", i, test.alg)
 				continue
 			}
@@ -120,20 +122,20 @@ func TestDecodeErrors(t *testing.T) {
 		enc(`{}`) + `.`,
 		enc(`{}`) + `.` + enc(`{}`),
 		enc(`{}`) + `.` + enc(`{}`) + `.`,
-		s.sn(`{}.{}`),
-		s.sn(enc(`{}`) + `.{}`),
-		s.sn(`{}.` + enc(`{}`)),
-		s.sn(enc(`{}`) + `.` + enc(`{}`)),
-		s.sn(enc(`{alg:}`) + `.` + enc(`{}`)),
-		s.sn(enc(`{alg:""}`) + `.` + enc(`{}`)),
-		s.sn(enc(`{"alg":}`) + `.` + enc(`{}`)),
-		s.sn(enc(`{"alg":123}`) + `.` + enc(`{}`)),
-		s.sn(enc(`{"alg":"ES256"}`) + `.` + enc(`{}`)),
-		s.sn(enc(`{"alg":"none"}`) + `.` + enc(`{}`)),
-		s.sn(enc(`{"alg":"PS256"}`) + `.{}`),
-		s.sn(enc(`{"alg":"PS256"}`) + `.` + enc(``)),
-		s.sn(enc(`{"alg":"PS256"}`) + `.` + enc(`{iss:}`)),
-		b.sn(enc(`{"alg":"PS256"}`) + `.` + enc(`{"iss":"issuer"}`)),
+		s.sn(`{}.{}`, t),
+		s.sn(enc(`{}`)+`.{}`, t),
+		s.sn(`{}.`+enc(`{}`), t),
+		s.sn(enc(`{}`)+`.`+enc(`{}`), t),
+		s.sn(enc(`{alg:}`)+`.`+enc(`{}`), t),
+		s.sn(enc(`{alg:""}`)+`.`+enc(`{}`), t),
+		s.sn(enc(`{"alg":}`)+`.`+enc(`{}`), t),
+		s.sn(enc(`{"alg":123}`)+`.`+enc(`{}`), t),
+		s.sn(enc(`{"alg":"ES256"}`)+`.`+enc(`{}`), t),
+		s.sn(enc(`{"alg":"none"}`)+`.`+enc(`{}`), t),
+		s.sn(enc(`{"alg":"PS256"}`)+`.{}`, t),
+		s.sn(enc(`{"alg":"PS256"}`)+`.`+enc(``), t),
+		s.sn(enc(`{"alg":"PS256"}`)+`.`+enc(`{iss:}`), t),
+		b.sn(enc(`{"alg":"PS256"}`)+`.`+enc(`{"iss":"issuer"}`), t),
 	}
 
 	for i, test := range tests {
@@ -230,7 +232,7 @@ func TestEncode(t *testing.T) {
 			t.Errorf("test %d %s expected no error, got: %v", i, test.alg, err)
 			continue
 		}
-		if b0 == nil || len(b0) == 0 {
+		if len(b0) == 0 {
 			t.Errorf("test %d %s encoded token should not return nil or empty byte slice", i, test.alg)
 			continue
 		}
@@ -256,7 +258,7 @@ func TestEncode(t *testing.T) {
 			t.Errorf("test %d %s should verify", i, test.alg)
 			continue
 		}
-		if d0 == nil || len(d0) == 0 {
+		if len(d0) == 0 {
 			t.Errorf("test %d %s d0 should not be nil or empty", i, test.alg)
 			continue
 		}

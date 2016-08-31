@@ -6,7 +6,7 @@
 // The API is designed to be instantly familiar to users of the standard crypto
 // and json packages:
 //
-//		// create jwt.Signer from the rsakey on disk
+//		// create jwt.Signer from the RSA key on disk
 //		rs384 := jwt.RS384.New(jwt.PEM{"myrsakey.pem"})
 //
 //		// create claims
@@ -14,7 +14,7 @@
 //			Issuer: "user@example.com",
 //		}
 //
-//		// encode claims as a token:
+//		// encode claims as a JWT:
 //		buf, err := rs384.Encode(&claims)
 //		if err != nil {
 //			log.Fatalln(err)
@@ -202,14 +202,14 @@ func Encode(alg Algorithm, signer Signer, obj interface{}) ([]byte, error) {
 // specified field from the JWT header. An error will be returned if the
 // fieldName is not present in the decoded header.
 func PeekHeaderField(buf []byte, fieldName string) (string, error) {
-	return peekField(buf, fieldName, 0)
+	return peekField(buf, fieldName, fieldPositionHeader)
 }
 
 // PeekPayloadField is a utility func that takes the raw JWT, and extracts a
 // specified field from the JWT payload (ie, claims). An error will be returned
 // if the fieldName is not present in the decoded payload.
 func PeekPayloadField(buf []byte, fieldName string) (string, error) {
-	return peekField(buf, fieldName, 1)
+	return peekField(buf, fieldName, fieldPositionPayload)
 }
 
 // PeekAlgorithm is a utility func that takes the raw JWT, extracts the "alg"

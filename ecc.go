@@ -168,7 +168,7 @@ func (es *eccSigner) Verify(buf, sig []byte) ([]byte, error) {
 	return dec, nil
 }
 
-// Encode encodes obj as a JSON token.
+// Encode serializes the JSON marshalable obj data as a JWT.
 func (es *eccSigner) Encode(obj interface{}) ([]byte, error) {
 	return es.alg.Encode(es, obj)
 }
