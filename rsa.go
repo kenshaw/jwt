@@ -16,28 +16,53 @@ const (
 	RSAMinimumBitLen = 2048
 )
 
+// RSASignerVerifier provides a standardized interface to low level RSA signing
+// implementation.
+//
+// This is used internally to provide a common interface to the RSA Sign/Verify
+// implementations for PKCS1v15 and PSS.
+type RSASignerVerifier interface {
+	// Sign signs data in buf using rand, priv and hash.
+	Sign(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, buf []byte) ([]byte, error)
+
+	// Verify verifies the signature sig against using pub, hash, and the
+	// hashed data.
+	Verify(pub *rsa.PublicKey, hash crypto.Hash, hashed []byte, sig []byte) error
+}
+
 // rsaMethod provides a wrapper for rsa signing methods.
 type rsaMethod struct {
-	Sign   func(io.Reader, *rsa.PrivateKey, crypto.Hash, []byte) ([]byte, error)
-	Verify func(*rsa.PublicKey, crypto.Hash, []byte, []byte) error
+	signFunc   func(io.Reader, *rsa.PrivateKey, crypto.Hash, []byte) ([]byte, error)
+	verifyFunc func(*rsa.PublicKey, crypto.Hash, []byte, []byte) error
+}
+
+// Sign signs the data in buf using rand, priv and hash.
+func (r rsaMethod) Sign(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, buf []byte) ([]byte, error) {
+	return r.signFunc(rand, priv, hash, buf)
+}
+
+// Verify verifies the signature sig against using pub, hash, and the hashed
+// data.
+func (r rsaMethod) Verify(pub *rsa.PublicKey, hash crypto.Hash, hashed []byte, sig []byte) error {
+	return r.verifyFunc(pub, hash, hashed, sig)
 }
 
 // rsaMethodPKCS1v15 provides a RSA method that signs and verifies with
 // PKCS1v15.
 var rsaMethodPKCS1v15 = rsaMethod{
-	Sign:   rsa.SignPKCS1v15,
-	Verify: rsa.VerifyPKCS1v15,
+	signFunc:   rsa.SignPKCS1v15,
+	verifyFunc: rsa.VerifyPKCS1v15,
 }
 
 // rsaMethodPSS provides a RSA method that signs and verifies with PSS.
 var rsaMethodPSS = rsaMethod{
-	Sign: func(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, hashed []byte) ([]byte, error) {
+	signFunc: func(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, hashed []byte) ([]byte, error) {
 		return rsa.SignPSS(rand, priv, hash, hashed, &rsa.PSSOptions{
 			SaltLength: rsa.PSSSaltLengthAuto,
 			Hash:       hash,
 		})
 	},
-	Verify: func(pub *rsa.PublicKey, hash crypto.Hash, hashed []byte, sig []byte) error {
+	verifyFunc: func(pub *rsa.PublicKey, hash crypto.Hash, hashed []byte, sig []byte) error {
 		return rsa.VerifyPSS(pub, hash, hashed, sig, &rsa.PSSOptions{
 			SaltLength: rsa.PSSSaltLengthAuto,
 			Hash:       hash,
@@ -48,15 +73,15 @@ var rsaMethodPSS = rsaMethod{
 // rsaSigner provides a RSA Signer.
 type rsaSigner struct {
 	alg    Algorithm
-	method rsaMethod
+	method RSASignerVerifier
 	hash   crypto.Hash
 	priv   *rsa.PrivateKey
 	pub    *rsa.PublicKey
 }
 
-// NewRSASigner creates an RSA Signer for the specified Algorithm and RSA
-// method.
-func NewRSASigner(alg Algorithm, method rsaMethod) func(pemutil.Store, crypto.Hash) (Signer, error) {
+// NewRSASigner creates an RSA Signer for the specified Algorithm and provided
+// low level RSA implementation.
+func NewRSASigner(alg Algorithm, method RSASignerVerifier) func(pemutil.Store, crypto.Hash) (Signer, error) {
 	return func(store pemutil.Store, hash crypto.Hash) (Signer, error) {
 		var ok bool
 		var privRaw, pubRaw interface{}
