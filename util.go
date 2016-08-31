@@ -90,23 +90,23 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 	return d.Decode(obj)
 }
 
-// fieldPosition are the different field positions.
+// tokenPosition is the different positions of the constituent JWT parts.
 //
 // Used in conjunction with peekField.
-type fieldPosition int
+type tokenPosition int
 
 const (
-	fieldPositionHeader fieldPosition = iota
-	fieldPositionPayload
+	tokenPositionHeader tokenPosition = iota
+	tokenPositionPayload
 
-//	fieldPositionSignature
+//	tokenPositionSignature
 )
 
 // peekField looks at an undecoded JWT, JSON decoding the data at pos, and
 // returning the specified field's value as string.
 //
 // If the fieldName is not present, then an error will be returned.
-func peekField(buf []byte, fieldName string, pos fieldPosition) (string, error) {
+func peekField(buf []byte, fieldName string, pos tokenPosition) (string, error) {
 	var err error
 
 	// split token
@@ -120,10 +120,10 @@ func peekField(buf []byte, fieldName string, pos fieldPosition) (string, error) 
 	var typ string
 	var b []byte
 	switch pos {
-	case fieldPositionHeader:
+	case tokenPositionHeader:
 		typ = "header"
 		b = ut.Header
-	case fieldPositionPayload:
+	case tokenPositionPayload:
 		typ = "payload"
 		b = ut.Payload
 

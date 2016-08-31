@@ -45,12 +45,12 @@ var (
 	tokenSep = []byte{'.'}
 )
 
-// Decode decodes a JWT, verifying the signature, and storing decoded values
-// from buf in obj.
+// Decode decodes a serialized JWT in buf into obj, and verifies the JWT
+// signature using the Algorithm and Signer.
 //
-// If the token, or signature is invalid, ErrInvalidToken or
-// ErrInvalidSignature will be returned, respectively. Otherwise, any other
-// errors encountered during decoding will be returned.
+// If the token or signature is invalid, ErrInvalidToken or ErrInvalidSignature
+// will be returned, respectively. Otherwise, any other errors encountered
+// during token decoding will be returned.
 func Decode(alg Algorithm, signer Signer, buf []byte, obj interface{}) error {
 	var err error
 
@@ -198,24 +198,24 @@ func Encode(alg Algorithm, signer Signer, obj interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// PeekHeaderField is a utility func that takes the raw JWT, and extracts a
-// specified field from the JWT header. An error will be returned if the
-// fieldName is not present in the decoded header.
-func PeekHeaderField(buf []byte, fieldName string) (string, error) {
-	return peekField(buf, fieldName, fieldPositionHeader)
+// PeekHeaderField extracts the specified field from the serialized JWT buf's
+// header. An error will be returned if the field is not present in the decoded
+// header.
+func PeekHeaderField(buf []byte, field string) (string, error) {
+	return peekField(buf, field, tokenPositionHeader)
 }
 
-// PeekPayloadField is a utility func that takes the raw JWT, and extracts a
-// specified field from the JWT payload (ie, claims). An error will be returned
-// if the fieldName is not present in the decoded payload.
-func PeekPayloadField(buf []byte, fieldName string) (string, error) {
-	return peekField(buf, fieldName, fieldPositionPayload)
+// PeekPayloadField extracts the specified field from the serialized JWT buf's
+// payload (ie, the token claims). An error will be returned if the field is
+// not present in the decoded payload.
+func PeekPayloadField(buf []byte, field string) (string, error) {
+	return peekField(buf, field, tokenPositionPayload)
 }
 
-// PeekAlgorithm is a utility func that takes the raw JWT, extracts the "alg"
-// (ie, the signing algorithm used) from the header, and attempts to decode it
-// into an Algorithm. An error is returned if the algorithm is not specified in
-// the header, or is otherwise invalid.
+// PeekAlgorithm extracts the signing algorithm listed in the "alg" field of
+// the serialized JWT buf's header and attempts to unmarshal it into an
+// Algorithm. An error will be returned if the alg field is not specified in
+// the JWT header, or is otherwise invalid.
 func PeekAlgorithm(buf []byte) (Algorithm, error) {
 	alg := NONE
 
@@ -234,16 +234,15 @@ func PeekAlgorithm(buf []byte) (Algorithm, error) {
 	return alg, nil
 }
 
-// PeekAlgorithmAndIssuer is a utility func that takes the raw JWT, extracts
-// the "alg" (ie, the signing algorithm used) from the header, and the standard
-// "iss" (issuer) claim field from the token payload. An error is returned if
-// the specified header algorithm is not specified or otherwise invalid.
-// Similarly, an error will be returned if the "iss" field is not specified in
-// the payload, or is otherwise invalid.
+// PeekAlgorithmAndIssuer extracts the signing algorithm listed in the "alg"
+// field and the issuer from the "iss" field of the serialized JWT buf's header
+// and payload, attempting to unmarshal alg to Algorithm and iss to a string.
+// An error will be returned if the Algorithm or Issuer fields are not
+// specified in the JWT header and payload, or are otherwise invalid.
 func PeekAlgorithmAndIssuer(buf []byte) (Algorithm, string, error) {
 	var err error
 
-	// get algo
+	// get algorithm
 	alg, err := PeekAlgorithm(buf)
 	if err != nil {
 		return NONE, "", err

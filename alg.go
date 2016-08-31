@@ -29,11 +29,11 @@ type Signer interface {
 	// be returned.
 	Verify(buf, sig []byte) ([]byte, error)
 
-	// Encode encodes obj as a token.
+	// Encode encodes obj as a serialized JWT.
 	Encode(obj interface{}) ([]byte, error)
 
-	// Decode decodes a serialized token, verifying the signature, storing the
-	// decoded data from the token in obj.
+	// Decode decodes a serialized JWT in buf into obj, and verifying the JWT
+	// signature in the process.
 	Decode(buf []byte, obj interface{}) error
 }
 
@@ -163,9 +163,9 @@ var algMap = map[Algorithm]struct {
 // The keyset can be of type PEM, pemutil.PEM, pemutil.Store,
 // *rsa.{PrivateKey,PublicKey}, *ecdsa.{PrivateKey,PublicKey}, or []byte.
 //
-// PLEASE NOTE: if a calling package *DOES NOT* provide a private key, tokens
-// cannot be Encode'd. Please note that pemutil will automatically generate the
-// public key for a provided private key if none was provided in the keyset.
+// If a private key is not provided, tokens cannot be Encode'd.  Public keys
+// will be automatically generated for RSA and ECC private keys if none were
+// provided in the keyset.
 func (alg Algorithm) New(keyset interface{}) (Signer, error) {
 	var err error
 
@@ -232,23 +232,27 @@ func (alg Algorithm) Header() Header {
 	}
 }
 
-// Encode encodes a JWT using the Algorithm and Signer.
+// Encode serializes a JWT using the Algorithm and Signer.
 func (alg Algorithm) Encode(signer Signer, obj interface{}) ([]byte, error) {
 	return Encode(alg, signer, obj)
 }
 
-// Decode verifies the signature of a JWT against the Algorithm, decoding any
-// data in buf to obj.
+// Decode decodes a serialized JWT in buf into obj, and verifies the JWT
+// signature using the Algorithm and Signer.
+//
+// If the token or signature is invalid, ErrInvalidToken or ErrInvalidSignature
+// will be returned, respectively. Otherwise, any other errors encountered
+// during token decoding will be returned.
 func (alg Algorithm) Decode(signer Signer, buf []byte, obj interface{}) error {
 	return Decode(alg, signer, buf, obj)
 }
 
-// MarshalText marshals Algorithm into a standard string.
+// MarshalText marshals Algorithm into a serialized form.
 func (alg Algorithm) MarshalText() ([]byte, error) {
 	return []byte(alg.String()), nil
 }
 
-// UnmarshalText unmarshals a string into the corresponding Algorithm.
+// UnmarshalText attempts to unmarshal buf into an Algorithm.
 func (alg *Algorithm) UnmarshalText(buf []byte) error {
 	switch string(buf) {
 	// hmac

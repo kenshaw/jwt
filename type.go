@@ -11,7 +11,7 @@ type Header struct {
 	Algorithm Algorithm `json:"alg"`
 }
 
-// Claims is a type containing the registered JWT claims.
+// Claims contains the registered JWT claims.
 //
 // See: https://tools.ietf.org/html/rfc7519#section-4.1
 type Claims struct {
