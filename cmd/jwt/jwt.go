@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 
+	isatty "github.com/mattn/go-isatty"
+
 	"github.com/knq/jwt"
 	"github.com/knq/pemutil"
 )
@@ -30,7 +32,7 @@ import (
 var (
 	flagEnc = flag.Bool("enc", false, "encode token from json data provided from stdin, or via name=value pairs passed on the command line")
 	flagDec = flag.Bool("dec", false, "decode and verify token read from stdin using the provided key data")
-	flagKey = flag.String("k", "", "path to PEM-encoded file containing key data")
+	flagKey = flag.String("k", "", "path to PEM-encoded file or JSON file containing key data")
 	flagAlg = flag.String("alg", "", "override signing algorithm")
 )
 
@@ -42,7 +44,7 @@ func main() {
 
 	// make sure k parameter is specified
 	if *flagKey == "" {
-		fmt.Fprintln(os.Stderr, "error: must supply a key")
+		fmt.Fprintln(os.Stderr, "error: must supply a key file with -k")
 		os.Exit(1)
 	}
 
@@ -65,17 +67,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	// read key data
-	pem := pemutil.Store{}
-	err = pemutil.PEM{*flagKey}.Load(pem)
+	// read key data and suggestedAlg
+	pem, suggestedAlg, err := loadKeyData(*flagKey)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 
 	// determine alg
 	var alg jwt.Algorithm
-	if *flagAlg != "" {
+	if suggestedAlg != jwt.NONE {
+		alg = suggestedAlg
+	} else if *flagAlg != "" {
 		err = (&alg).UnmarshalText([]byte(*flagAlg))
 	} else if *flagDec {
 		alg, err = jwt.PeekAlgorithm(in)
@@ -111,7 +114,59 @@ func main() {
 		os.Exit(1)
 	}
 
+	// make the output a little nicer
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		out = append(out, '\n')
+	}
+
 	os.Stdout.Write(out)
+}
+
+// loadKeyData loads key data from the path.
+//
+// Attempts to json-decode the file first, otherwise passes it to pemutil. If
+// the file appears to be a Google service account JSON file (ie contains
+// "gserviceaccount.com"), then jwt.RS256 will be returned, otherwise jwt.NONE
+// is returned.
+func loadKeyData(path string) (pemutil.Store, jwt.Algorithm, error) {
+	// check if it's json data
+	buf, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, jwt.NONE, err
+	}
+
+	// attempt json decode
+	v := make(map[string]interface{})
+	err = json.Unmarshal(buf, &v)
+	if err != nil {
+		// not json encoded, so skip
+		pem := pemutil.Store{}
+		err = pemutil.PEM{path}.Load(pem)
+		if err != nil {
+			return nil, jwt.NONE, err
+		}
+		return pem, jwt.NONE, nil
+	}
+
+	// attempt decode on each field of the json decoded values, and ignoring
+	// any errors
+	pem := pemutil.Store{}
+	for _, val := range v {
+		if str, ok := val.(string); ok {
+			_ = pemutil.DecodePEM(pem, []byte(str))
+		}
+	}
+
+	if len(pem) < 1 {
+		return nil, jwt.NONE, fmt.Errorf("could not load any PEM encoded keys from %s", path)
+	}
+
+	// if it's a google service account, return RS256
+	if bytes.Contains(buf, []byte("gserviceaccount.com")) {
+		return pem, jwt.RS256, nil
+	}
+
+	return pem, jwt.NONE, nil
 }
 
 // getSuitableAlgFromCurve inspects the key length in curve, and determines the

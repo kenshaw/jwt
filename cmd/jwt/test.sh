@@ -6,7 +6,7 @@ go build
 
 NOW=$(date +%s)
 
-for i in ../../testdata/*.pem; do
+for i in ../../testdata/*.{pem,json}; do
   ENC=$(echo '{"iss": "foo", "nbf": '$NOW'}' | ./jwt -enc -k $i)
   DEC=$(./jwt -dec -k $i <<< "$ENC"|jq -C '.')
 
