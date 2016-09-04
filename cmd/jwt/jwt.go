@@ -1,13 +1,25 @@
-package main
-
-// jwt either encodes or decodes stdin, writing to stdout using provided key
-// data.
-//
+// jwt is a command line utility that encodes or decodes a JSON Web Token,
+// using provided key data. jwt can use any PEM encoded public or private key
+// file, including JSON-encoded keys (such as a Google service account
+// credential file) to encode, decode, and verify JWTs.
 //
 // Example:
-//		# decode and verify a token
-//		echo "" |jwt -dec -k rsa.pem
-//		echo ""t
+//    # encode arbitrary JSON as payload (ie, claims)
+//    echo '{"iss": "issuer", "nbf": '$(date +%s)'}' | jwt -k ./testdata/rsa.pem -enc
+//
+//    # encode name/value pairs from command line
+//    jwt -k ./testdata/rsa.pem -enc iss=issuer nbf=$(date +%s)
+//
+//    # decode (and verify) token
+//    echo "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJmb28iOiJiYXIifQ.FhkiHkoESI_cG3NPigFrxEk9Z60_oXrOT2vGm9Pn6RDgYNovYORQmmA0zs1AoAOf09ly2Nx2YAg6ABqAYga1AcMFkJljwxTT5fYphTuqpWdy4BELeSYJx5Ty2gmr8e7RonuUztrdD5WfPqLKMm1Ozp_T6zALpRmwTIW0QPnaBXaQD90FplAg46Iy1UlDKr-Eupy0i5SLch5Q-p2ZpaL_5fnTIUDlxC3pWhJTyx_71qDI-mAA_5lE_VdroOeflG56sSmDxopPEG3bFlSu1eowyBfxtu0_CuVd-M42RU75Zc4Gsj6uV77MBtbMrf4_7M_NUTSgoIF3fRqxrj0NzihIBg" | jwt -k ./testdata/rsa.pem -dec
+//
+//    # encode and decode in one sweep:
+//    jwt -k ./testdata/rsa.pem -enc iss=issuer nbf=$(date +%s) | jwt -k ./testdata/rsa.pem -dec
+//
+//    # specify algorithm -- this will error since the token here is encoded using RS256, not RS384
+//    echo "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJmb28iOiJiYXIifQ.FhkiHkoESI_cG3NPigFrxEk9Z60_oXrOT2vGm9Pn6RDgYNovYORQmmA0zs1AoAOf09ly2Nx2YAg6ABqAYga1AcMFkJljwxTT5fYphTuqpWdy4BELeSYJx5Ty2gmr8e7RonuUztrdD5WfPqLKMm1Ozp_T6zALpRmwTIW0QPnaBXaQD90FplAg46Iy1UlDKr-Eupy0i5SLch5Q-p2ZpaL_5fnTIUDlxC3pWhJTyx_71qDI-mAA_5lE_VdroOeflG56sSmDxopPEG3bFlSu1eowyBfxtu0_CuVd-M42RU75Zc4Gsj6uV77MBtbMrf4_7M_NUTSgoIF3fRqxrj0NzihIBg" | jwt -k ./testdata/rsa.pem -dec -alg RS384
+
+package main
 
 import (
 	"bytes"
@@ -23,7 +35,7 @@ import (
 	"strconv"
 	"strings"
 
-	isatty "github.com/mattn/go-isatty"
+	"github.com/mattn/go-isatty"
 
 	"github.com/knq/jwt"
 	"github.com/knq/pemutil"
