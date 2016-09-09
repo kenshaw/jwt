@@ -111,8 +111,8 @@ const (
 	PS512
 )
 
-// algMap is a map of algorithm implementations to its Algorithm.
-var algMap = map[Algorithm]struct {
+// algSet is the set of Algorithm implementations.
+var algSet = []struct {
 	newFunc func(pemutil.Store, crypto.Hash) (Signer, error)
 	hash    crypto.Hash
 }{
@@ -169,7 +169,7 @@ var algMap = map[Algorithm]struct {
 func (alg Algorithm) New(keyset interface{}) (Signer, error) {
 	var err error
 
-	a := algMap[alg]
+	a := algSet[alg]
 
 	// check hash
 	if !a.hash.Available() {
