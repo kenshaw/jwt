@@ -113,8 +113,8 @@ const (
 
 // algSet is the set of Algorithm implementations.
 var algSet = []struct {
-	newFunc func(pemutil.Store, crypto.Hash) (Signer, error)
-	hash    crypto.Hash
+	new  func(pemutil.Store, crypto.Hash) (Signer, error)
+	hash crypto.Hash
 }{
 	// none
 	NONE: {func(pemutil.Store, crypto.Hash) (Signer, error) {
@@ -221,7 +221,7 @@ func (alg Algorithm) New(keyset interface{}) (Signer, error) {
 		return nil, err
 	}
 
-	return a.newFunc(store, a.hash)
+	return a.new(store, a.hash)
 }
 
 // Header builds the JWT header for the algorithm.
