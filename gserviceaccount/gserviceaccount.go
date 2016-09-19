@@ -3,12 +3,13 @@
 package gserviceaccount
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/knq/jwt"
 	"github.com/knq/jwt/bearer"
