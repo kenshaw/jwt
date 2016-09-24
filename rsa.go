@@ -127,9 +127,8 @@ func NewRSASigner(alg Algorithm, method RSASignerVerifier) func(pemutil.Store, c
 	}
 }
 
-// Sign creates a signature for buf, returning it as a URL-safe base64 encoded
-// byte slice.
-func (rs *rsaSigner) Sign(buf []byte) ([]byte, error) {
+// SignBytes creates a signature for buf.
+func (rs *rsaSigner) SignBytes(buf []byte) ([]byte, error) {
 	var err error
 
 	// check rs.priv
@@ -145,7 +144,13 @@ func (rs *rsaSigner) Sign(buf []byte) ([]byte, error) {
 	}
 
 	// sign
-	sig, err := rs.method.Sign(rand.Reader, rs.priv, rs.hash, h.Sum(nil))
+	return rs.method.Sign(rand.Reader, rs.priv, rs.hash, h.Sum(nil))
+}
+
+// Sign creates a signature for buf, returning it as a URL-safe base64 encoded
+// byte slice.
+func (rs *rsaSigner) Sign(buf []byte) ([]byte, error) {
+	sig, err := rs.SignBytes(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -157,23 +162,37 @@ func (rs *rsaSigner) Sign(buf []byte) ([]byte, error) {
 	return enc, nil
 }
 
-// Verify creates a signature for buf, comparing it against the URL-safe base64
-// encoded sig. If the sig is invalid, then ErrInvalidSignature will be
-// returned.
-func (rs *rsaSigner) Verify(buf, sig []byte) ([]byte, error) {
+// VerifyBytes creates a signature for buf, comparing it against the raw sig.
+// If the sig is invalid, then ErrInvalidSignature is returned.
+func (rs *rsaSigner) VerifyBytes(buf, sig []byte) error {
 	var err error
 
 	// check rs.pub
 	if rs.pub == nil {
-		return nil, errors.New("rsaSigner.Verify: pub cannot be nil")
+		return errors.New("rsaSigner.VerifyBytes: pub cannot be nil")
 	}
 
 	// hash
 	h := rs.hash.New()
 	_, err = h.Write(buf)
 	if err != nil {
-		return nil, err
+		return err
 	}
+
+	// verify
+	err = rs.method.Verify(rs.pub, rs.hash, h.Sum(nil), sig)
+	if err != nil {
+		return ErrInvalidSignature
+	}
+
+	return nil
+}
+
+// Verify creates a signature for buf, comparing it against the URL-safe base64
+// encoded sig and returning the decoded signature. If the sig is invalid, then
+// ErrInvalidSignature will be returned.
+func (rs *rsaSigner) Verify(buf, sig []byte) ([]byte, error) {
+	var err error
 
 	// decode
 	dec, err := b64.DecodeString(string(sig))
@@ -182,9 +201,9 @@ func (rs *rsaSigner) Verify(buf, sig []byte) ([]byte, error) {
 	}
 
 	// verify
-	err = rs.method.Verify(rs.pub, rs.hash, h.Sum(nil), dec)
+	err = rs.VerifyBytes(buf, dec)
 	if err != nil {
-		return nil, ErrInvalidSignature
+		return nil, err
 	}
 
 	return dec, nil

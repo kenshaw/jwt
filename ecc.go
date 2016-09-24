@@ -98,14 +98,13 @@ func (es *eccSigner) mksig(r, s *big.Int) ([]byte, error) {
 	return buf, nil
 }
 
-// Sign creates a signature for buf, returning it as a URL-safe base64 encoded
-// byte slice.
-func (es *eccSigner) Sign(buf []byte) ([]byte, error) {
+// SignBytes creates a signature for buf.
+func (es *eccSigner) SignBytes(buf []byte) ([]byte, error) {
 	var err error
 
 	// check es.priv
 	if es.priv == nil {
-		return nil, errors.New("eccSigner.Sign: priv cannot be nil")
+		return nil, errors.New("eccSigner.SignBytes: priv cannot be nil")
 	}
 
 	// hash
@@ -122,35 +121,61 @@ func (es *eccSigner) Sign(buf []byte) ([]byte, error) {
 	}
 
 	// make sig
-	sig, err := es.mksig(r, s)
+	return es.mksig(r, s)
+}
+
+// Sign creates a signature for buf, returning it as a URL-safe base64 encoded
+// byte slice.
+func (es *eccSigner) Sign(buf []byte) ([]byte, error) {
+	sig, err := es.SignBytes(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	// encode
 	enc := make([]byte, b64.EncodedLen(len(sig)))
 	b64.Encode(enc, sig)
 
 	return enc, nil
 }
 
-// Verify creates a signature for buf, comparing it against the URL-safe base64
-// encoded sig. If the sig is invalid, then ErrInvalidSignature will be
-// returned.
-func (es *eccSigner) Verify(buf, sig []byte) ([]byte, error) {
+// VerifyBytes creates a signature for buf, comparing it against the raw sig.
+// If the sig is invalid, then ErrInvalidSignature is returned.
+func (es *eccSigner) VerifyBytes(buf, sig []byte) error {
 	var err error
 
 	// check es.pub
 	if es.pub == nil {
-		return nil, errors.New("eccSigner.Verify: pub cannot be nil")
+		return errors.New("eccSigner.VerifyBytes: pub cannot be nil")
 	}
 
 	// hash
 	h := es.hash.New()
 	_, err = h.Write(buf)
 	if err != nil {
-		return nil, err
+		return err
 	}
+
+	// check decoded length
+	if len(sig) != 2*es.keyLen {
+		return ErrInvalidSignature
+	}
+
+	r := big.NewInt(0).SetBytes(sig[:es.keyLen])
+	s := big.NewInt(0).SetBytes(sig[es.keyLen:])
+
+	// verify
+	if !ecdsa.Verify(es.pub, h.Sum(nil), r, s) {
+		return ErrInvalidSignature
+	}
+
+	return nil
+}
+
+// Verify creates a signature for buf, comparing it against the URL-safe base64
+// encoded sig and returning the decoded signature. If the sig is invalid, then
+// ErrInvalidSignature will be returned.
+func (es *eccSigner) Verify(buf, sig []byte) ([]byte, error) {
+	var err error
 
 	// decode
 	dec, err := b64.DecodeString(string(sig))
@@ -158,17 +183,10 @@ func (es *eccSigner) Verify(buf, sig []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// check decoded length
-	if len(dec) != 2*es.keyLen {
-		return nil, ErrInvalidSignature
-	}
-
-	r := big.NewInt(0).SetBytes(dec[:es.keyLen])
-	s := big.NewInt(0).SetBytes(dec[es.keyLen:])
-
 	// verify
-	if !ecdsa.Verify(es.pub, h.Sum(nil), r, s) {
-		return nil, ErrInvalidSignature
+	err = es.VerifyBytes(buf, dec)
+	if err != nil {
+		return nil, err
 	}
 
 	return dec, nil

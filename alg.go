@@ -20,13 +20,20 @@ type Algorithm uint
 // signing, and verify to handle the crypto primitives and lower-level API
 // calls.
 type Signer interface {
+	// SignBytes creates a signature for buf.
+	SignBytes(buf []byte) ([]byte, error)
+
 	// Sign creates a signature for buf, returning it as a URL-safe base64
 	// encoded byte slice.
 	Sign(buf []byte) ([]byte, error)
 
+	// VerifyBytes creates a signature for buf, comparing it against the raw
+	// sig. If the sig is invalid, then ErrInvalidSignature is returned.
+	VerifyBytes(buf, dec []byte) error
+
 	// Verify creates a signature for buf, comparing it against the URL-safe
-	// base64 encoded sig. If the sig is invalid, then ErrInvalidSignature will
-	// be returned.
+	// base64 encoded sig and returning the decoded signature. If the sig is
+	// invalid, then ErrInvalidSignature will be returned.
 	Verify(buf, sig []byte) ([]byte, error)
 
 	// Encode encodes obj as a serialized JWT.
