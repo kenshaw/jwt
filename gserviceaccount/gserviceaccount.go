@@ -79,16 +79,14 @@ func (gsa *GServiceAccount) Signer() (jwt.Signer, error) {
 }
 
 // TokenSource returns a reusable token source for the Google service account
-// using the provided subject, context, and scopes.
+// using the provided context and scopes.
 //
-// If subject is empty, then GServiceAccount.ClientEmail will be used.
-// Similarly, if the passed context is nil, then context.Background() will be
-// used instead.
+// If context is empty, then then context.Background() will be used instead.
 //
-// If additional claims need to be added to the TokenSource, use
-// jwt/bearer.Claim to add them prior to wrapping the TokenSource with
-// oauth2.ReusableTokenSource.
-func (gsa *GServiceAccount) TokenSource(subject string, ctxt context.Context, scopes ...string) (*bearer.Bearer, error) {
+// If additional claims need to be added to the TokenSource (ie, subject or the
+// "sub" field), use jwt/bearer.Claim to add them prior to wrapping the
+// TokenSource with oauth2.ReusableTokenSource.
+func (gsa *GServiceAccount) TokenSource(ctxt context.Context, scopes ...string) (*bearer.Bearer, error) {
 	var err error
 
 	// simple check that required fields are present
@@ -97,9 +95,6 @@ func (gsa *GServiceAccount) TokenSource(subject string, ctxt context.Context, sc
 	}
 
 	// set up subject and context
-	if subject == "" {
-		subject = gsa.ClientEmail
-	}
 	if ctxt == nil {
 		ctxt = context.Background()
 	}
@@ -110,17 +105,21 @@ func (gsa *GServiceAccount) TokenSource(subject string, ctxt context.Context, sc
 		return nil, err
 	}
 
+	// bearer grant options
+	opts := []bearer.Option{
+		bearer.ExpiresIn(DefaultExpiration),
+		bearer.IssuedAt(true),
+		bearer.Claim("iss", gsa.ClientEmail),
+		bearer.Claim("aud", gsa.TokenURI),
+		bearer.Scope(scopes...),
+	}
+
 	// create token source
 	b, err := bearer.NewTokenSource(
 		signer,
 		gsa.TokenURI,
 		ctxt,
-		bearer.ExpiresIn(DefaultExpiration),
-		bearer.IssuedAt(true),
-		bearer.Claim("iss", gsa.ClientEmail),
-		bearer.Claim("sub", subject),
-		bearer.Claim("aud", gsa.TokenURI),
-		bearer.Scope(scopes...),
+		opts...,
 	)
 	if err != nil {
 		return nil, err
