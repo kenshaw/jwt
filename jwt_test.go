@@ -2,9 +2,13 @@ package jwt
 
 import (
 	"bytes"
+	"encoding/json"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/knq/pemutil"
 )
 
 func enc(v string) string {
@@ -272,6 +276,63 @@ func TestEncode(t *testing.T) {
 			t.Errorf("test %d %s a0 and d0 should be same value", i, test.alg)
 			continue
 		}
+	}
+}
+
+func TestEncodeDecodeCustom(t *testing.T) {
+	var err error
+
+	store := pemutil.Store{}
+	err = pemutil.PEM{"testdata/hmac.pem"}.Load(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// create signer
+	s, err := HS256.New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// custom types
+	type h struct {
+		A Algorithm   `json:"alg,omitempty"`
+		T string      `json:"typ,omitempty"`
+		V json.Number `json:"my_number,omitempty"`
+	}
+	type c struct {
+		U string `json:"uid,omitempty"`
+		B int    `json:"b,omitempty"`
+	}
+	type tok struct {
+		H h `jwt:"header"`
+		C c `jwt:"payload"`
+	}
+
+	exp := tok{
+		H: h{HS256, "JWT", json.Number("234234234234")},
+		C: c{"foo", 61},
+	}
+
+	// encode
+	buf, err := Encode(HS256, s, exp)
+	if err != nil {
+		t.Errorf("expected no error, got: %v", err)
+	}
+	if len(buf) < 1 {
+		t.Error("buf should not be empty")
+	}
+
+	// decode
+	var n tok
+	err = Decode(HS256, s, buf, &n)
+	if err != nil {
+		t.Errorf("expected no error, got: %v", err)
+	}
+
+	// compare
+	if !reflect.DeepEqual(exp, n) {
+		t.Error("expected decoded token to match original")
 	}
 }
 

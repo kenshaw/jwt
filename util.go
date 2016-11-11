@@ -43,12 +43,15 @@ func loadKeysFromPEM(pem pemutil.PEM) (pemutil.Store, error) {
 // getFieldWithTag lookups jwt tag, with specified tagName on obj, returning
 // its reflected value.
 func getFieldWithTag(obj interface{}, tagName string) *reflect.Value {
-	objValElem := reflect.ValueOf(obj).Elem()
+	objVal := reflect.ValueOf(obj)
+	if objVal.Kind() != reflect.Struct {
+		objVal = objVal.Elem()
+	}
 
-	for i := 0; i < objValElem.NumField(); i++ {
-		fieldType := objValElem.Type().Field(i)
+	for i := 0; i < objVal.NumField(); i++ {
+		fieldType := objVal.Type().Field(i)
 		if tagName == fieldType.Tag.Get("jwt") {
-			field := objValElem.Field(i)
+			field := objVal.Field(i)
 			return &field
 		}
 	}
@@ -88,6 +91,46 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 	d := json.NewDecoder(bytes.NewBuffer(buf))
 	d.UseNumber()
 	return d.Decode(obj)
+}
+
+// grabEncodeTargets grabs the fields for the obj.
+func grabEncodeTargets(alg Algorithm, obj interface{}) (interface{}, interface{}, error) {
+	var headerObj, payloadObj interface{}
+
+	// get header
+	if headerVal := getFieldWithTag(obj, "header"); headerVal != nil {
+		headerObj = headerVal.Interface()
+	}
+	if headerObj == nil {
+		headerObj = alg.Header()
+	}
+
+	// get payload
+	if payloadVal := getFieldWithTag(obj, "payload"); payloadVal != nil {
+		payloadObj = payloadVal.Interface()
+	}
+	if payloadObj == nil {
+		payloadObj = obj
+	}
+
+	return headerObj, payloadObj, nil
+}
+
+// encodeTargets determines what to encode.
+func encodeTargets(alg Algorithm, obj interface{}) (interface{}, interface{}, error) {
+	// determine what to encode
+	switch val := obj.(type) {
+	case *Token:
+		return val.Header, val.Payload, nil
+	}
+
+	objVal := reflect.ValueOf(obj)
+	objKind := objVal.Kind()
+	if objKind == reflect.Struct || (objKind == reflect.Ptr && objVal.Elem().Kind() == reflect.Struct) {
+		return grabEncodeTargets(alg, obj)
+	}
+
+	return alg.Header(), obj, nil
 }
 
 // tokenPosition is the different positions of the constituent JWT parts.

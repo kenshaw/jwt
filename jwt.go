@@ -123,18 +123,9 @@ func Decode(alg Algorithm, signer Signer, buf []byte, obj interface{}) error {
 // encoded token or any errors encountered during encoding.
 func Encode(alg Algorithm, signer Signer, obj interface{}) ([]byte, error) {
 	var err error
-	var headerObj, payloadObj interface{}
 
-	// determine what to encode
-	switch val := obj.(type) {
-	case *Token:
-		headerObj = val.Header
-		payloadObj = val.Payload
-
-	default:
-		headerObj = alg.Header()
-		payloadObj = val
-	}
+	// grab encode targets
+	headerObj, payloadObj, err := encodeTargets(alg, obj)
 
 	// json encode header
 	header, err := json.Marshal(headerObj)
