@@ -44,10 +44,6 @@ type Signer interface {
 	Decode(buf []byte, obj interface{}) error
 }
 
-// PEM is a wrapper that assists with loading PEM-encoded crypto primitives
-// (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc).
-type PEM pemutil.PEM
-
 const (
 	// NONE provides a JWT signing method for NONE.
 	//
@@ -125,7 +121,7 @@ var algSet = []struct {
 }{
 	// none
 	NONE: {func(pemutil.Store, crypto.Hash) (Signer, error) {
-		return nil, errors.New("jwt algorithm none is not implemented")
+		return nil, errors.New("algorithm none is not implemented")
 	}, crypto.SHA256},
 
 	// HS256 is HMAC + SHA-256
@@ -167,8 +163,8 @@ var algSet = []struct {
 
 // New creates a Signer using the supplied keyset.
 //
-// The keyset can be of type PEM, pemutil.PEM, pemutil.Store,
-// *rsa.{PrivateKey,PublicKey}, *ecdsa.{PrivateKey,PublicKey}, or []byte.
+// The keyset can be of type []byte, *rsa.{PrivateKey,PublicKey},
+// *ecdsa.{PrivateKey,PublicKey}, or be pemutil.Store.
 //
 // If a private key is not provided, tokens cannot be Encode'd.  Public keys
 // will be automatically generated for RSA and ECC private keys if none were
@@ -183,52 +179,41 @@ func (alg Algorithm) New(keyset interface{}) (Signer, error) {
 		return nil, fmt.Errorf("%s.New: crypto hash unavailable", alg)
 	}
 
-	var store pemutil.Store
+	var s pemutil.Store
 
 	// load the data
 	switch p := keyset.(type) {
+	// regular store
 	case pemutil.Store:
-		store = p
-
-	// pem data
-	case pemutil.PEM:
-		store, err = loadKeysFromPEM(p)
-		if err != nil {
-			return nil, err
-		}
-	case PEM:
-		store, err = loadKeysFromPEM(pemutil.PEM(p))
-		if err != nil {
-			return nil, err
-		}
+		s = p
 
 	// raw key
 	case []byte:
-		store = pemutil.Store{pemutil.PrivateKey: p}
+		s = pemutil.Store{pemutil.PrivateKey: p}
 
 	// rsa keys
 	case *rsa.PrivateKey:
-		store = pemutil.Store{pemutil.RSAPrivateKey: p}
+		s = pemutil.Store{pemutil.RSAPrivateKey: p}
 	case *rsa.PublicKey:
-		store = pemutil.Store{pemutil.PublicKey: p}
+		s = pemutil.Store{pemutil.PublicKey: p}
 
 	// ecc keys
 	case *ecdsa.PrivateKey:
-		store = pemutil.Store{pemutil.ECPrivateKey: p}
+		s = pemutil.Store{pemutil.ECPrivateKey: p}
 	case *ecdsa.PublicKey:
-		store = pemutil.Store{pemutil.PublicKey: p}
+		s = pemutil.Store{pemutil.PublicKey: p}
 
 	default:
 		return nil, fmt.Errorf("%s.New: unrecognized keyset type", alg)
 	}
 
 	// generate public keys
-	err = pemutil.GeneratePublicKeys(store)
+	err = s.AddPublicKeys()
 	if err != nil {
 		return nil, err
 	}
 
-	return a.new(store, a.hash)
+	return a.new(s, a.hash)
 }
 
 // Header builds the JWT header for the algorithm.

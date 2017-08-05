@@ -5,14 +5,17 @@ package gserviceaccount
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/knq/jwt"
 	"github.com/knq/jwt/bearer"
+	"github.com/knq/pemutil"
 )
 
 const (
@@ -25,8 +28,8 @@ const (
 	DefaultExpiration = 1 * time.Hour
 )
 
-// GServiceAccount is the data contained within a JSON-encoded Google service
-// account file.
+// GServiceAccount wraps Google Service Account parameters, and are the same
+// values found in a standard JSON-encoded credentials file provided by Google.
 type GServiceAccount struct {
 	Type                    string `json:"type,omitempty"`
 	ProjectID               string `json:"project_id,omitempty"`
@@ -38,6 +41,9 @@ type GServiceAccount struct {
 	TokenURI                string `json:"token_uri,omitempty"`
 	AuthProviderX509CertURL string `json:"auth_provider_x509_cert_url,omitempty"`
 	ClientX509CertURL       string `json:"client_x509_cert_url,omitempty"`
+
+	signer jwt.Signer `json:"-"`
+	mu     sync.Mutex `json:"-"`
 }
 
 // FromJSON loads service account credentials from the JSON encoded buf.
@@ -73,18 +79,36 @@ func FromFile(path string) (*GServiceAccount, error) {
 	return FromJSON(buf)
 }
 
-// Signer returns a suitable jwt.Signer for use with the service account.
+// Signer returns a jwt.Signer for use when signing tokens.
 func (gsa *GServiceAccount) Signer() (jwt.Signer, error) {
-	return DefaultAlgorithm.New(jwt.PEM{[]byte(gsa.PrivateKey)})
+	gsa.mu.Lock()
+	defer gsa.mu.Unlock()
+
+	if gsa.signer == nil {
+		keyset := pemutil.Store{}
+		err := keyset.Decode([]byte(gsa.PrivateKey))
+		if err != nil {
+			return nil, fmt.Errorf("jwt/gserviceaccount: could not decode private key: %v", err)
+		}
+
+		s, err := DefaultAlgorithm.New(keyset)
+		if err != nil {
+			return nil, err
+		}
+		gsa.signer = s
+	}
+
+	return gsa.signer, nil
 }
 
-// TokenSource returns a reusable token source for the Google service account
-// using the provided context and scopes.
+// TokenSource returns a oauth2.TokenSource for the Google Service Account
+// using the provided context and scopes. The resulting token source should be
+// wrapped with oauth2.ReusableTokenSource prior to being used elsewhere.
 //
-// If context is empty, then then context.Background() will be used instead.
+// If the supplied context is nil, context.Background() will be used.
 //
 // If additional claims need to be added to the TokenSource (ie, subject or the
-// "sub" field), use jwt/bearer.Claim to add them prior to wrapping the
+// "sub" field), use jwt/bearer.Claim to add them before wrapping the
 // TokenSource with oauth2.ReusableTokenSource.
 func (gsa *GServiceAccount) TokenSource(ctxt context.Context, scopes ...string) (*bearer.Bearer, error) {
 	var err error

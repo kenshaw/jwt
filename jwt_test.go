@@ -11,6 +11,31 @@ import (
 	"github.com/knq/pemutil"
 )
 
+func loadKey(a Algorithm) (pemutil.Store, error) {
+	var err error
+	var keyfile string
+
+	// determine key
+	algName := a.String()
+	switch algName[:2] {
+	case "HS":
+		keyfile = "testdata/hmac.pem"
+	case "RS", "PS":
+		keyfile = "testdata/rsa.pem"
+	case "ES":
+		keyfile = "testdata/" + strings.ToLower(algName) + ".pem"
+	}
+
+	// load key
+	s := pemutil.Store{}
+	err = s.LoadFile(keyfile)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
 func enc(v string) string {
 	return b64.EncodeToString([]byte(v))
 }
@@ -30,26 +55,17 @@ func (s *sigger) sn(v string, t *testing.T) string {
 }
 
 func TestSignAndVerify(t *testing.T) {
-	tests := getTests()
-	for i, test := range tests {
-		var p PEM
-
-		// load PEM
-		algName := test.alg.String()
-		switch algName[:2] {
-		case "HS":
-			p = PEM{"testdata/hmac.pem"}
-		case "RS", "PS":
-			p = PEM{"testdata/rsa.pem"}
-		case "ES":
-			p = PEM{"testdata/" + strings.ToLower(algName) + ".pem"}
+	for i, test := range getTests() {
+		// load key
+		keyset, err := loadKey(test.alg)
+		if err != nil {
+			t.Fatalf("test %d expected no error, got: %v", i, err)
 		}
 
-		// gen signature
-		signer, err := test.alg.New(p)
+		// create signer
+		signer, err := test.alg.New(keyset)
 		if err != nil {
-			t.Errorf("expected no error, got: %v", err)
-			continue
+			t.Fatalf("test %d expected no error, got: %v", i, err)
 		}
 
 		// only test valid sigs
@@ -99,14 +115,20 @@ func TestSignAndVerify(t *testing.T) {
 }
 
 func TestDecodeErrors(t *testing.T) {
-	signer, err := PS256.New(PEM{"testdata/rsa.pem"})
+	keyset := pemutil.Store{}
+	err := keyset.LoadFile("testdata/rsa.pem")
+	if err != nil {
+		t.Fatalf("could not load rsa key, got: %v", err)
+	}
+
+	signer, err := PS256.New(keyset)
 	if err != nil {
 		t.Errorf("expected no error, got: %v", err)
 		return
 	}
 
 	s := &sigger{signer}
-	a, err := PS384.New(PEM{"testdata/rsa.pem"})
+	a, err := PS384.New(keyset)
 	if err != nil {
 		t.Errorf("expected no error, got: %v", err)
 		return
@@ -152,26 +174,17 @@ func TestDecodeErrors(t *testing.T) {
 }
 
 func TestDecode(t *testing.T) {
-	tests := getTests()
-	for i, test := range tests {
-		var p PEM
-
-		// load PEM
-		algName := test.alg.String()
-		switch algName[:2] {
-		case "HS":
-			p = PEM{"testdata/hmac.pem"}
-		case "RS", "PS":
-			p = PEM{"testdata/rsa.pem"}
-		case "ES":
-			p = PEM{"testdata/" + strings.ToLower(algName) + ".pem"}
+	for i, test := range getTests() {
+		// load key
+		keyset, err := loadKey(test.alg)
+		if err != nil {
+			t.Fatalf("test %d expected no error, got: %v", i, err)
 		}
 
-		// gen signature
-		signer, err := test.alg.New(p)
+		// create signer
+		signer, err := test.alg.New(keyset)
 		if err != nil {
-			t.Errorf("expected no error, got: %v", err)
-			return
+			t.Fatalf("test %d expected no error, got: %v", i, err)
 		}
 
 		// split token
@@ -209,26 +222,17 @@ func TestDecode(t *testing.T) {
 }
 
 func TestEncode(t *testing.T) {
-	tests := getTests()
-	for i, test := range tests {
-		var p PEM
-
-		// load PEM
-		algName := test.alg.String()
-		switch algName[:2] {
-		case "HS":
-			p = PEM{"testdata/hmac.pem"}
-		case "RS", "PS":
-			p = PEM{"testdata/rsa.pem"}
-		case "ES":
-			p = PEM{"testdata/" + strings.ToLower(algName) + ".pem"}
+	for i, test := range getTests() {
+		// load key
+		keyset, err := loadKey(test.alg)
+		if err != nil {
+			t.Fatalf("test %d %s expected no error, got: %v", i, test.alg, err)
 		}
 
 		// gen signature
-		signer, err := test.alg.New(p)
+		signer, err := test.alg.New(keyset)
 		if err != nil {
-			t.Errorf("test %d %s expected no error, got: %v", i, test.alg, err)
-			continue
+			t.Fatalf("test %d %s expected no error, got: %v", i, test.alg, err)
 		}
 
 		b0, err := signer.Encode(test.exp)
@@ -282,14 +286,14 @@ func TestEncode(t *testing.T) {
 func TestEncodeDecodeCustom(t *testing.T) {
 	var err error
 
-	store := pemutil.Store{}
-	err = pemutil.PEM{"testdata/hmac.pem"}.Load(store)
+	keyset := pemutil.Store{}
+	err = keyset.LoadFile("testdata/hmac.pem")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// create signer
-	s, err := HS256.New(store)
+	s, err := HS256.New(keyset)
 	if err != nil {
 		t.Fatal(err)
 	}

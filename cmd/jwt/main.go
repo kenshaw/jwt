@@ -152,33 +152,33 @@ func loadKeyData(path string) (pemutil.Store, jwt.Algorithm, error) {
 	err = json.Unmarshal(buf, &v)
 	if err != nil {
 		// not json encoded, so skip
-		pem := pemutil.Store{}
-		err = pemutil.PEM{path}.Load(pem)
+		keyset := pemutil.Store{}
+		err = keyset.LoadFile(path)
 		if err != nil {
 			return nil, jwt.NONE, err
 		}
-		return pem, jwt.NONE, nil
+		return keyset, jwt.NONE, nil
 	}
 
 	// attempt decode on each field of the json decoded values, and ignoring
 	// any errors
-	pem := pemutil.Store{}
+	keyset := pemutil.Store{}
 	for _, val := range v {
 		if str, ok := val.(string); ok {
-			_ = pemutil.DecodePEM(pem, []byte(str))
+			_ = keyset.Decode([]byte(str))
 		}
 	}
 
-	if len(pem) < 1 {
-		return nil, jwt.NONE, fmt.Errorf("could not load any PEM encoded keys from %s", path)
+	if len(keyset) < 1 {
+		return nil, jwt.NONE, fmt.Errorf("could not find any PEM encoded keys in %s", path)
 	}
 
 	// if it's a google service account, return RS256
 	if bytes.Contains(buf, []byte("gserviceaccount.com")) {
-		return pem, jwt.RS256, nil
+		return keyset, jwt.RS256, nil
 	}
 
-	return pem, jwt.NONE, nil
+	return keyset, jwt.NONE, nil
 }
 
 // getSuitableAlgFromCurve inspects the key length in curve, and determines the

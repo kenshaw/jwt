@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-
-	"github.com/knq/pemutil"
 )
 
 var (
@@ -26,19 +24,6 @@ var (
 	// ErrInvalidToken is the error when the JWT is improperly formatted.
 	ErrInvalidToken = errors.New("invalid token")
 )
-
-// loadKeysFromPEM loads keys in the PEM, returning a pemutil.Store containing
-// the loaded crypto primitives (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc).
-func loadKeysFromPEM(pem pemutil.PEM) (pemutil.Store, error) {
-	// attempt to load crypto primitives
-	store := pemutil.Store{}
-	err := pem.Load(store)
-	if err != nil {
-		return nil, err
-	}
-
-	return store, nil
-}
 
 // getFieldWithTag lookups jwt tag, with specified tagName on obj, returning
 // its reflected value.

@@ -37,18 +37,32 @@ import (
 	"time"
 
 	"github.com/knq/jwt"
+	"github.com/knq/pemutil"
 )
 
 func main() {
-	// create PS384 with private and public key
+	var err error
+
+	// load key
+	keyset := pemutil.Store{}
+	err = keyset.LoadFile("rsa-private.pem")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = keyset.AddPublicKeys()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// create PS384 using keyset
 	// in addition, there are the other standard JWT encryption implementations:
 	// HMAC:         HS256, HS384, HS512
 	// RSA-PKCS1v15: RS256, RS384, RS512
 	// ECC:          ES256, ES384, ES512
 	// RSA-SSA-PSS:  PS256, PS384, PS512
-	ps384, err := jwt.PS384.New(jwt.PEM{"rsa-private.pem", "rsa-public.pem"})
+	ps384, err := jwt.PS384.New(keyset)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	// calculate an expiration time
@@ -65,7 +79,7 @@ func main() {
 	// encode token
 	buf, err := ps384.Encode(&c0)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	fmt.Printf("Encoded token:\n\n%s\n\n", string(buf))
 
@@ -74,7 +88,7 @@ func main() {
 	err = ps384.Decode(buf, &c1)
 	if err != nil {
 		// if the signature was bad, the err would not be nil
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	if reflect.DeepEqual(c0, c1) {
 		fmt.Printf("Claims Match! Decoded claims: %+v\n\n", c1)
@@ -91,7 +105,7 @@ func main() {
 
 	buf, err = ps384.Encode(&c3)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	fmt.Printf("Encoded token with custom claims:\n\n%s\n\n", string(buf))
 
@@ -99,7 +113,7 @@ func main() {
 	c4 := myClaims{}
 	err = ps384.Decode(buf, &c4)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	if c4.Audience == "my audience" {
 		fmt.Printf("Decoded custom claims: %+v\n\n", c1)

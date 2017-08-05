@@ -126,6 +126,9 @@ func Encode(alg Algorithm, signer Signer, obj interface{}) ([]byte, error) {
 
 	// grab encode targets
 	headerObj, payloadObj, err := encodeTargets(alg, obj)
+	if err != nil {
+		return nil, err
+	}
 
 	// json encode header
 	header, err := json.Marshal(headerObj)
