@@ -1,4 +1,4 @@
-// example/example.go
+// example/main.go
 package main
 
 //go:generate openssl genrsa -out rsa-private.pem 2048
@@ -20,8 +20,7 @@ func main() {
 	var err error
 
 	// load key
-	keyset := pemutil.Store{}
-	err = keyset.LoadFile("rsa-private.pem")
+	keyset, err := pemutil.LoadFile("rsa-private.pem")
 	if err != nil {
 		log.Fatal(err)
 	}

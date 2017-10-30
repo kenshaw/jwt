@@ -90,6 +90,7 @@ func (gsa *GServiceAccount) Signer() (jwt.Signer, error) {
 		if err != nil {
 			return nil, fmt.Errorf("jwt/gserviceaccount: could not decode private key: %v", err)
 		}
+		keyset.AddPublicKeys()
 
 		s, err := DefaultAlgorithm.New(keyset)
 		if err != nil {

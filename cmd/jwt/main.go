@@ -152,8 +152,7 @@ func loadKeyData(path string) (pemutil.Store, jwt.Algorithm, error) {
 	err = json.Unmarshal(buf, &v)
 	if err != nil {
 		// not json encoded, so skip
-		keyset := pemutil.Store{}
-		err = keyset.LoadFile(path)
+		keyset, err := pemutil.LoadFile(path)
 		if err != nil {
 			return nil, jwt.NONE, err
 		}
@@ -168,6 +167,7 @@ func loadKeyData(path string) (pemutil.Store, jwt.Algorithm, error) {
 			_ = keyset.Decode([]byte(str))
 		}
 	}
+	keyset.AddPublicKeys()
 
 	if len(keyset) < 1 {
 		return nil, jwt.NONE, fmt.Errorf("could not find any PEM encoded keys in %s", path)
