@@ -48,10 +48,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = keyset.AddPublicKeys()
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// create PS384 using keyset
 	// in addition, there are the other standard JWT encryption implementations:
