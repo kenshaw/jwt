@@ -169,3 +169,12 @@ func (b *Bearer) Token() (*oauth2.Token, error) {
 
 	return ret, nil
 }
+
+// Client returns a HTTP client using the bearer token.
+func (b *Bearer) Client() *http.Client {
+	return &http.Client{
+		Transport: &oauth2.Transport{
+			Source: b,
+		},
+	}
+}

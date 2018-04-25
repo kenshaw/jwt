@@ -171,3 +171,26 @@ func (gsa *GServiceAccount) TokenSource(ctxt context.Context, scopes ...string) 
 
 	return b, nil
 }
+
+// Client returns a HTTP client using the provided context and scopes for the
+// service account as the underlying transport.
+//
+// When called with the appropriate scopes, the created client can be passed to
+// any Google API for creating a service client:
+//
+// 		import (
+// 			dns "google.golang.org/api/dns/v2beta1"
+//      )
+//      cl, err := gsa.Client(ctxt, dns.CloudPlatformScope, dns.NdevClouddnsReadwriteScope)
+// 		if err != nil { /* ... */ }
+//      dnsService, err := dns.New(cl)
+// 		if err != nil { /* ... */ }
+//
+// Note: this is a convenience func only.
+func (gsa *GServiceAccount) Client(ctxt context.Context, scopes ...string) (*http.Client, error) {
+	b, err := gsa.TokenSource(ctxt, scopes...)
+	if err != nil {
+		return nil, err
+	}
+	return b.Client(), nil
+}
