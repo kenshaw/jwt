@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"sync"
 	"time"
 
@@ -41,41 +42,50 @@ type GServiceAccount struct {
 	AuthProviderX509CertURL string `json:"auth_provider_x509_cert_url,omitempty"`
 	ClientX509CertURL       string `json:"client_x509_cert_url,omitempty"`
 
-	signer jwt.Signer `json:"-"`
-	mu     sync.Mutex `json:"-"`
+	expiration time.Duration     `json:"-"`
+	signer     jwt.Signer        `json:"-"`
+	transport  http.RoundTripper `json:"-"`
+	mu         sync.Mutex        `json:"-"`
 }
 
 // FromJSON loads service account credentials from the JSON encoded buf.
-func FromJSON(buf []byte) (*GServiceAccount, error) {
-	var gsa GServiceAccount
+func FromJSON(buf []byte, opts ...Option) (*GServiceAccount, error) {
+	var err error
 
 	// unmarshal
-	err := json.Unmarshal(buf, &gsa)
-	if err != nil {
+	gsa := new(GServiceAccount)
+	if err = json.Unmarshal(buf, gsa); err != nil {
 		return nil, err
 	}
 
-	return &gsa, nil
+	// apply opts
+	for _, o := range opts {
+		if err = o(gsa); err != nil {
+			return nil, err
+		}
+	}
+
+	return gsa, nil
 }
 
 // FromReader loads Google service account credentials from a reader.
-func FromReader(r io.Reader) (*GServiceAccount, error) {
+func FromReader(r io.Reader, opts ...Option) (*GServiceAccount, error) {
 	buf, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 
-	return FromJSON(buf)
+	return FromJSON(buf, opts...)
 }
 
 // FromFile loads Google service account credentials from a reader.
-func FromFile(path string) (*GServiceAccount, error) {
+func FromFile(path string, opts ...Option) (*GServiceAccount, error) {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return FromJSON(buf)
+	return FromJSON(buf, opts...)
 }
 
 // Signer returns a jwt.Signer for use when signing tokens.
@@ -128,13 +138,24 @@ func (gsa *GServiceAccount) TokenSource(ctxt context.Context, scopes ...string) 
 		return nil, err
 	}
 
+	// determine expiration
+	expiration := gsa.expiration
+	if expiration == 0 {
+		expiration = DefaultExpiration
+	}
+
 	// bearer grant options
 	opts := []bearer.Option{
-		bearer.ExpiresIn(DefaultExpiration),
+		bearer.ExpiresIn(expiration),
 		bearer.IssuedAt(true),
 		bearer.Claim("iss", gsa.ClientEmail),
 		bearer.Claim("aud", gsa.TokenURI),
 		bearer.Scope(scopes...),
+	}
+
+	// add transport
+	if gsa.transport != nil {
+		opts = append(opts, bearer.Transport(gsa.transport))
 	}
 
 	// create token source
