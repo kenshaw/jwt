@@ -22,7 +22,7 @@ type Claims struct {
 	Subject string `json:"sub,omitempty"`
 
 	// Audience ("aud") identifies the recipients that the JWT is intended for.
-	Audience string `json:"aud,omitempty"`
+	Audience interface{} `json:"aud,omitempty"`
 
 	// Expiration ("exp") identifies the expiration time on or after which the
 	// JWT MUST NOT be accepted for processing.
