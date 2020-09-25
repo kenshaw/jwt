@@ -1,28 +1,28 @@
-# About jwt [![Build Status](https://travis-ci.org/knq/jwt.svg)](https://travis-ci.org/knq/jwt) [![Coverage Status](https://coveralls.io/repos/knq/jwt/badge.svg?branch=master&service=github)](https://coveralls.io/github/knq/jwt?branch=master) #
+# jwt
 
-A [Golang](https://golang.org/project) package that provides a simple and
-secure way to encode and decode [JWT](https://jwt.io/) tokens.
+A [Go](https://golang.org/project) package that provides a simple and secure
+way to encode and decode [JWT](https://jwt.io/) tokens.
 
-## Installation ##
+## Installation
 
 Install the package via the following:
 
-    go get -u github.com/knq/jwt
+    go get -u github.com/kenshaw/jwt
 
 Additionally, if you need to do command line encoding/decoding of JWTs, there
 is a functional command line tool available:
 
-    go get -u github.com/knq/jwt/cmd/jwt
+    go get -u github.com/kenshaw/jwt/cmd/jwt
 
-## Usage ##
+## Usage
 
-Please see [the GoDoc API page](http://godoc.org/github.com/knq/jwt) for a
+Please see [the GoDoc API page](http://godoc.org/github.com/kenshaw/jwt) for a
 full API listing.
 
 The jwt package can be used similarly to the following:
 
 ```go
-// example/main.go
+// _example/main.go
 package main
 
 //go:generate openssl genrsa -out rsa-private.pem 2048
@@ -36,8 +36,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/knq/jwt"
-	"github.com/knq/pemutil"
+	"github.com/kenshaw/jwt"
+	"github.com/kenshaw/pemutil"
 )
 
 func main() {

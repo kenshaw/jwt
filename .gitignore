@@ -1,4 +1,7 @@
 coverage.out
-example/example
+_example/example
+_example/example.exe
 cmd/jwt/jwt
+cmd/jwt/jwt.exe
 /jwt
+/jwt.exe

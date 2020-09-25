@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/knq/pemutil"
+	"github.com/kenshaw/pemutil"
 )
 
 func loadKey(a Algorithm) (Store, error) {

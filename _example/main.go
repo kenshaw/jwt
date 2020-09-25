@@ -1,4 +1,4 @@
-// example/main.go
+// _example/main.go
 package main
 
 //go:generate openssl genrsa -out rsa-private.pem 2048
@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/knq/jwt"
-	"github.com/knq/pemutil"
+	"github.com/kenshaw/jwt"
+	"github.com/kenshaw/pemutil"
 )
 
 func main() {
@@ -69,7 +69,7 @@ func main() {
 
 	// use custom claims
 	c3 := map[string]interface{}{
-		"aud": "my audience",
+		"aud":                      "my audience",
 		"http://example/api/write": true,
 	}
 	fmt.Printf("My Custom Claims: %+v\n\n", c3)

@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/knq/jwt"
-	"github.com/knq/jwt/bearer"
-	"github.com/knq/pemutil"
+	"github.com/kenshaw/jwt"
+	"github.com/kenshaw/jwt/bearer"
+	"github.com/kenshaw/pemutil"
 )
 
 const (
@@ -51,20 +51,17 @@ type GServiceAccount struct {
 // FromJSON loads service account credentials from the JSON encoded buf.
 func FromJSON(buf []byte, opts ...Option) (*GServiceAccount, error) {
 	var err error
-
 	// unmarshal
 	gsa := new(GServiceAccount)
 	if err = json.Unmarshal(buf, gsa); err != nil {
 		return nil, err
 	}
-
 	// apply opts
 	for _, o := range opts {
 		if err = o(gsa); err != nil {
 			return nil, err
 		}
 	}
-
 	return gsa, nil
 }
 
@@ -74,7 +71,6 @@ func FromReader(r io.Reader, opts ...Option) (*GServiceAccount, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return FromJSON(buf, opts...)
 }
 
@@ -84,7 +80,6 @@ func FromFile(path string, opts ...Option) (*GServiceAccount, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return FromJSON(buf, opts...)
 }
 
@@ -92,21 +87,18 @@ func FromFile(path string, opts ...Option) (*GServiceAccount, error) {
 func (gsa *GServiceAccount) Signer() (jwt.Signer, error) {
 	gsa.mu.Lock()
 	defer gsa.mu.Unlock()
-
 	if gsa.signer == nil {
 		keyset, err := pemutil.DecodeBytes([]byte(gsa.PrivateKey))
 		if err != nil {
 			return nil, fmt.Errorf("jwt/gserviceaccount: could not decode private key: %v", err)
 		}
 		keyset.AddPublicKeys()
-
 		s, err := DefaultAlgorithm.New(keyset)
 		if err != nil {
 			return nil, err
 		}
 		gsa.signer = s
 	}
-
 	return gsa.signer, nil
 }
 
@@ -121,29 +113,24 @@ func (gsa *GServiceAccount) Signer() (jwt.Signer, error) {
 // TokenSource with oauth2.ReusableTokenSource.
 func (gsa *GServiceAccount) TokenSource(ctxt context.Context, scopes ...string) (*bearer.Bearer, error) {
 	var err error
-
 	// simple check that required fields are present
 	if gsa.ClientEmail == "" || gsa.TokenURI == "" {
 		return nil, errors.New("jwt/gserviceaccount: ClientEmail and TokenURI cannot be empty")
 	}
-
 	// set up subject and context
 	if ctxt == nil {
 		ctxt = context.Background()
 	}
-
 	// get signer
 	signer, err := gsa.Signer()
 	if err != nil {
 		return nil, err
 	}
-
 	// determine expiration
 	expiration := gsa.expiration
 	if expiration == 0 {
 		expiration = DefaultExpiration
 	}
-
 	// bearer grant options
 	opts := []bearer.Option{
 		bearer.ExpiresIn(expiration),
@@ -152,12 +139,10 @@ func (gsa *GServiceAccount) TokenSource(ctxt context.Context, scopes ...string) 
 		bearer.Claim("aud", gsa.TokenURI),
 		bearer.Scope(scopes...),
 	}
-
 	// add transport
 	if gsa.transport != nil {
 		opts = append(opts, bearer.Transport(gsa.transport))
 	}
-
 	// create token source
 	b, err := bearer.NewTokenSource(
 		signer,
@@ -168,7 +153,6 @@ func (gsa *GServiceAccount) TokenSource(ctxt context.Context, scopes ...string) 
 	if err != nil {
 		return nil, err
 	}
-
 	return b, nil
 }
 

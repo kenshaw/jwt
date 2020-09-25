@@ -2,7 +2,26 @@
 
 package jwt
 
-import "fmt"
+import "strconv"
+
+func _() {
+	// An "invalid array index" compiler error signifies that the constant values have changed.
+	// Re-run the stringer command to generate them again.
+	var x [1]struct{}
+	_ = x[NONE-0]
+	_ = x[HS256-1]
+	_ = x[HS384-2]
+	_ = x[HS512-3]
+	_ = x[RS256-4]
+	_ = x[RS384-5]
+	_ = x[RS512-6]
+	_ = x[ES256-7]
+	_ = x[ES384-8]
+	_ = x[ES512-9]
+	_ = x[PS256-10]
+	_ = x[PS384-11]
+	_ = x[PS512-12]
+}
 
 const _Algorithm_name = "NONEHS256HS384HS512RS256RS384RS512ES256ES384ES512PS256PS384PS512"
 
@@ -10,7 +29,7 @@ var _Algorithm_index = [...]uint8{0, 4, 9, 14, 19, 24, 29, 34, 39, 44, 49, 54, 5
 
 func (i Algorithm) String() string {
 	if i >= Algorithm(len(_Algorithm_index)-1) {
-		return fmt.Sprintf("Algorithm(%d)", i)
+		return "Algorithm(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _Algorithm_name[_Algorithm_index[i]:_Algorithm_index[i+1]]
 }

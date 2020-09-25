@@ -97,8 +97,8 @@ type j struct {
 
 func getTests() []j {
 	ec := tc{
-		"iss": "joe",
-		"exp": 1300819380,
+		"iss":                        "joe",
+		"exp":                        1300819380,
 		"http://example.com/is_root": true,
 	}
 
