@@ -131,15 +131,15 @@ func (gsa *GServiceAccount) TokenSource(ctx context.Context, scopes ...string) (
 	}
 	// bearer grant options
 	opts := []bearer.Option{
-		bearer.ExpiresIn(expiration),
-		bearer.IssuedAt(true),
-		bearer.Claim("iss", gsa.ClientEmail),
-		bearer.Claim("aud", gsa.TokenURI),
-		bearer.Scope(scopes...),
+		bearer.WithExpiresIn(expiration),
+		bearer.WithIssuedAt(true),
+		bearer.WithClaim("iss", gsa.ClientEmail),
+		bearer.WithClaim("aud", gsa.TokenURI),
+		bearer.WithScope(scopes...),
 	}
 	// add transport
 	if gsa.transport != nil {
-		opts = append(opts, bearer.Transport(gsa.transport))
+		opts = append(opts, bearer.WithTransport(gsa.transport))
 	}
 	// create token source
 	b, err := bearer.NewTokenSource(
