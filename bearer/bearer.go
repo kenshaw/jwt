@@ -28,18 +28,15 @@ const GrantType = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 // This should be wrapped with a oauth2.ReusableTokenSource before using it
 // with oauth2.Transport.
 type Bearer struct {
-	signer    jwt.Signer
-	tokenURL  string
-	context   context.Context
-	transport http.RoundTripper
-
+	signer        jwt.Signer
+	tokenURL      string
+	context       context.Context
+	transport     http.RoundTripper
 	addExpiration bool
 	addIssuedAt   bool
 	addNotBefore  bool
-
-	expiresIn time.Duration
-
-	claims map[string]interface{}
+	expiresIn     time.Duration
+	claims        map[string]interface{}
 }
 
 // NewTokenSource creates a oauth2.TokenSource that generates auth tokens
@@ -48,12 +45,12 @@ type Bearer struct {
 // supplied context.
 //
 // Use the Claim option to pass additional claims to the token source.
-func NewTokenSource(signer jwt.Signer, tokenURL string, ctxt context.Context, opts ...Option) (*Bearer, error) {
+func NewTokenSource(signer jwt.Signer, tokenURL string, ctx context.Context, opts ...Option) (*Bearer, error) {
 	var err error
 	b := &Bearer{
 		signer:   signer,
 		tokenURL: tokenURL,
-		context:  ctxt,
+		context:  ctx,
 		claims:   make(map[string]interface{}),
 	}
 	// apply opts
@@ -152,6 +149,7 @@ func (b *Bearer) Client() *http.Client {
 	return &http.Client{
 		Transport: &oauth2.Transport{
 			Source: b,
+			Base:   b.transport,
 		},
 	}
 }
