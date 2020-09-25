@@ -5,12 +5,14 @@ package bearer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/kenshaw/jwt"
@@ -151,5 +153,73 @@ func (b *Bearer) Client() *http.Client {
 		Transport: &oauth2.Transport{
 			Source: b,
 		},
+	}
+}
+
+// Option represents a Bearer option.
+type Option func(*Bearer) error
+
+// WithExpiresIn is an option that will set the expiration duration generated
+// for tokens to the specified duration.
+func WithExpiresIn(d time.Duration) Option {
+	return func(tok *Bearer) error {
+		if d != 0 {
+			tok.addExpiration = true
+			tok.expiresIn = d
+		} else {
+			tok.addExpiration = false
+			tok.expiresIn = 0
+		}
+		return nil
+	}
+}
+
+// WithIssuedAt is an option that toggles whether or not the Issued At ("iat")
+// field is generated for the token.
+func WithIssuedAt(enable bool) Option {
+	return func(tok *Bearer) error {
+		tok.addIssuedAt = enable
+		return nil
+	}
+}
+
+// WithNotBefore is an option that toggles whether or not the Not Before
+// ("nbf") field is generated for the token.
+func WithNotBefore(enable bool) Option {
+	return func(tok *Bearer) error {
+		tok.addNotBefore = enable
+		return nil
+	}
+}
+
+// WithClaim is an option that adds an additional claim that is generated with
+// the token.
+func WithClaim(name string, v interface{}) Option {
+	return func(tok *Bearer) error {
+		if tok.claims == nil {
+			return errors.New("attempting to add claim to improperly created token")
+		}
+		tok.claims[name] = v
+		return nil
+	}
+}
+
+// WithScope is an option that adds a Scope ("scope") field to generated
+// tokens. Scopes are joined with a space (" ") separator.
+func WithScope(scopes ...string) Option {
+	return func(tok *Bearer) error {
+		if len(scopes) > 0 {
+			return WithClaim("scope", strings.Join(scopes, " "))(tok)
+		}
+		return nil
+	}
+}
+
+// WithTransport is an option that sets an underlying client transport to the
+// exchange process.
+func WithTransport(transport http.RoundTripper) Option {
+	return func(tok *Bearer) error {
+		tok.transport = transport
+		return nil
 	}
 }

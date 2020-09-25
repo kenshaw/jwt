@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -106,8 +107,6 @@ func (gsa *GServiceAccount) Signer() (jwt.Signer, error) {
 // using the provided context and scopes. The resulting token source should be
 // wrapped with oauth2.ReusableTokenSource prior to being used elsewhere.
 //
-// If the supplied context is nil, context.Background() will be used.
-//
 // If additional claims need to be added to the TokenSource (ie, subject or the
 // "sub" field), use jwt/bearer.Claim to add them before wrapping the
 // TokenSource with oauth2.ReusableTokenSource.
@@ -176,4 +175,39 @@ func (gsa *GServiceAccount) Client(ctx context.Context, scopes ...string) (*http
 		return nil, err
 	}
 	return b.Client(), nil
+}
+
+// Option is a GServiceAccount option.
+type Option func(*GServiceAccount) error
+
+// WithTransport is a GServiceAccount option to set the client transport used
+// by the token source.
+func WithTransport(transport http.RoundTripper) Option {
+	return func(gsa *GServiceAccount) error {
+		gsa.transport = transport
+		return nil
+	}
+}
+
+// WithProxy is a GServiceAccount option to set a HTTP proxy used for by the
+// token source.
+func WithProxy(proxy string) Option {
+	return func(gsa *GServiceAccount) error {
+		u, err := url.Parse(proxy)
+		if err != nil {
+			return err
+		}
+		return WithTransport(&http.Transport{
+			Proxy: http.ProxyURL(u),
+		})(gsa)
+	}
+}
+
+// WithExpiration is a GServiceAccount option to set a expiration limit for
+// tokens generated from the token source.
+func WithExpiration(expiration time.Duration) Option {
+	return func(gsa *GServiceAccount) error {
+		gsa.expiration = expiration
+		return nil
+	}
 }
