@@ -3,6 +3,7 @@
 package bearer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,16 +13,12 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
-
 	"github.com/kenshaw/jwt"
+	"golang.org/x/oauth2"
 )
 
-const (
-	// GrantType is the JWT grant type assertion value.
-	GrantType = "urn:ietf:params:oauth:grant-type:jwt-bearer"
-)
+// GrantType is the JWT grant type assertion value.
+const GrantType = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 
 // Bearer provides a JWT Bearer Grant oauth2.TokenSource that handles redeeming
 // tokens using the JWT bearer grant assertion auth flow.

@@ -1,6 +1,8 @@
 package jwt
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestDecodeToObjOrFieldWithTag(t *testing.T) {
 	var err error

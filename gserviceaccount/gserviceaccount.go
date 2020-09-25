@@ -111,15 +111,14 @@ func (gsa *GServiceAccount) Signer() (jwt.Signer, error) {
 // If additional claims need to be added to the TokenSource (ie, subject or the
 // "sub" field), use jwt/bearer.Claim to add them before wrapping the
 // TokenSource with oauth2.ReusableTokenSource.
-func (gsa *GServiceAccount) TokenSource(ctxt context.Context, scopes ...string) (*bearer.Bearer, error) {
-	var err error
-	// simple check that required fields are present
-	if gsa.ClientEmail == "" || gsa.TokenURI == "" {
-		return nil, errors.New("jwt/gserviceaccount: ClientEmail and TokenURI cannot be empty")
-	}
-	// set up subject and context
-	if ctxt == nil {
-		ctxt = context.Background()
+func (gsa *GServiceAccount) TokenSource(ctx context.Context, scopes ...string) (*bearer.Bearer, error) {
+	switch {
+	case gsa.Type != "service_account":
+		return nil, errors.New("jwt/gserviceaccount: type is not service_account")
+	case gsa.ClientEmail == "":
+		return nil, errors.New("jwt/gserviceaccount: missing client_email")
+	case gsa.TokenURI == "":
+		return nil, errors.New("jwt/gserviceaccount: missing token_uri")
 	}
 	// get signer
 	signer, err := gsa.Signer()
@@ -147,7 +146,7 @@ func (gsa *GServiceAccount) TokenSource(ctxt context.Context, scopes ...string) 
 	b, err := bearer.NewTokenSource(
 		signer,
 		gsa.TokenURI,
-		ctxt,
+		ctx,
 		opts...,
 	)
 	if err != nil {
@@ -159,20 +158,20 @@ func (gsa *GServiceAccount) TokenSource(ctxt context.Context, scopes ...string) 
 // Client returns a HTTP client using the provided context and scopes for the
 // service account as the underlying transport.
 //
-// When called with the appropriate scopes, the created client can be passed to
-// any Google API for creating a service client:
+// When called with the appropriate scopes, the created client can be used to
+// create any Google API Service:
 //
 // 		import (
 // 			dns "google.golang.org/api/dns/v2beta1"
 //      )
-//      cl, err := gsa.Client(ctxt, dns.CloudPlatformScope, dns.NdevClouddnsReadwriteScope)
+//      cl, err := gsa.Client(ctx, dns.CloudPlatformScope, dns.NdevClouddnsReadwriteScope)
 // 		if err != nil { /* ... */ }
 //      dnsService, err := dns.New(cl)
 // 		if err != nil { /* ... */ }
 //
 // Note: this is a convenience func only.
-func (gsa *GServiceAccount) Client(ctxt context.Context, scopes ...string) (*http.Client, error) {
-	b, err := gsa.TokenSource(ctxt, scopes...)
+func (gsa *GServiceAccount) Client(ctx context.Context, scopes ...string) (*http.Client, error) {
+	b, err := gsa.TokenSource(ctx, scopes...)
 	if err != nil {
 		return nil, err
 	}
