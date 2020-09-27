@@ -45,8 +45,6 @@ import (
 )
 
 func main() {
-	var err error
-
 	// load key
 	keyset, err := pemutil.LoadFile("rsa-private.pem")
 	if err != nil {
