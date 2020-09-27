@@ -59,10 +59,8 @@ func DecodeUnverifiedToken(buf []byte, ut *UnverifiedToken) error {
 	if len(b) != 3 {
 		return ErrInvalidToken
 	}
-
 	ut.Header = b[0]
 	ut.Payload = b[1]
 	ut.Signature = b[2]
-
 	return nil
 }

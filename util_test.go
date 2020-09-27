@@ -5,44 +5,34 @@ import (
 )
 
 func TestDecodeToObjOrFieldWithTag(t *testing.T) {
-	var err error
 	buf := []byte(`{"foo":"notfoo", "bar":"notbar"}`)
-
 	type tchild1 struct {
 		Foo string `json:"foo"`
 	}
-
 	type tchild2 struct {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
 	}
-
 	type tparent1 struct {
 		Child tchild1 `jwt:"child"`
 	}
-
 	type tparent2 struct {
 		Child tchild2 `jwt:"child"`
 	}
-
 	// type of dst and default match, so set dst to default
 	dst0 := tchild1{}
 	def0 := tchild1{Foo: "foo"}
-	err = decodeToObjOrFieldWithTag(buf, &dst0, "child", &def0)
-	if err != nil {
+	if err := decodeToObjOrFieldWithTag(buf, &dst0, "child", &def0); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-
 	if "foo" != dst0.Foo {
 		t.Fatalf("dst0.Foo should be 'foo', is: '%s'", dst0.Foo)
 	}
-
 	// types don't match, and no field tagged with jwt:child, so decode buf
 	// into dst
 	dst1 := tchild2{}
 	def1 := tchild1{Foo: "foo"}
-	err = decodeToObjOrFieldWithTag(buf, &dst1, "child", &def1)
-	if err != nil {
+	if err := decodeToObjOrFieldWithTag(buf, &dst1, "child", &def1); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
 	if "notfoo" != dst1.Foo {
@@ -51,25 +41,21 @@ func TestDecodeToObjOrFieldWithTag(t *testing.T) {
 	if "notbar" != dst1.Bar {
 		t.Fatalf("dst1.Bar should be 'bar', is: '%s'", dst1.Foo)
 	}
-
 	// parent has field tagged with jwt:child, which is same type as def, so
 	// set parent.child to default -- no buf decode
 	dst2 := tparent1{}
 	def2 := tchild1{Foo: "foo"}
-	err = decodeToObjOrFieldWithTag(buf, &dst2, "child", &def2)
-	if err != nil {
+	if err := decodeToObjOrFieldWithTag(buf, &dst2, "child", &def2); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
 	if "foo" != dst2.Child.Foo {
 		t.Fatalf("dst2.Child.Foo should be 'foo', is: '%s'", dst2.Child.Foo)
 	}
-
 	// parent has field tagged with jwt:child, but is of different type than
 	// def, so decode buf into parent's field
 	dst3 := tparent2{}
 	def3 := tchild1{Foo: "foo"}
-	err = decodeToObjOrFieldWithTag(buf, &dst3, "child", &def3)
-	if err != nil {
+	if err := decodeToObjOrFieldWithTag(buf, &dst3, "child", &def3); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
 	if "notfoo" != dst3.Child.Foo {
@@ -78,12 +64,10 @@ func TestDecodeToObjOrFieldWithTag(t *testing.T) {
 	if "notbar" != dst3.Child.Bar {
 		t.Fatalf("dest3.Child.Bar should be 'notbar', is: '%s'", dst3.Child.Bar)
 	}
-
 	// force error (bad json)
 	dst4 := tparent1{}
 	def4 := tchild2{Foo: "foo"}
-	err = decodeToObjOrFieldWithTag([]byte{'{'}, &dst4, "child", &def4)
-	if err == nil {
+	if err := decodeToObjOrFieldWithTag([]byte{'{'}, &dst4, "child", &def4); err == nil {
 		t.Fatalf("expected error, got nil")
 	}
 }
@@ -103,9 +87,7 @@ func getTests() []j {
 		"exp":                        1300819380,
 		"http://example.com/is_root": true,
 	}
-
 	fb := tc{"foo": "bar"}
-
 	return []j{
 		// hmac good
 		j{HS256, ec, "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk", true},

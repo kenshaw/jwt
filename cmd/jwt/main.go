@@ -246,14 +246,13 @@ type UnstructuredToken struct {
 
 // doDec decodes in as a JWT.
 func doDec(signer jwt.Signer, in []byte) ([]byte, error) {
-	var err error
 	// decode token
-	ut := UnstructuredToken{}
-	if err = signer.Decode(bytes.TrimSpace(in), &ut); err != nil {
+	t := UnstructuredToken{}
+	if err := signer.Decode(bytes.TrimSpace(in), &t); err != nil {
 		return nil, err
 	}
 	// pretty format output
-	out, err := json.MarshalIndent(&ut, "", "  ")
+	out, err := json.MarshalIndent(&t, "", "  ")
 	if err != nil {
 		return nil, err
 	}
@@ -262,13 +261,12 @@ func doDec(signer jwt.Signer, in []byte) ([]byte, error) {
 
 // doEnc encodes in as the payload in a JWT.
 func doEnc(signer jwt.Signer, in []byte) ([]byte, error) {
-	var err error
 	// make sure its valid json first
 	m := make(map[string]interface{})
 	// do the initial decode
 	d := json.NewDecoder(bytes.NewBuffer(in))
 	d.UseNumber()
-	if err = d.Decode(&m); err != nil {
+	if err := d.Decode(&m); err != nil {
 		return nil, err
 	}
 	// encode claims

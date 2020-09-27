@@ -52,17 +52,16 @@ type GServiceAccount struct {
 
 // FromJSON loads service account credentials from the JSON encoded buf.
 func FromJSON(buf []byte, opts ...Option) (*GServiceAccount, error) {
-	var err error
 	// unmarshal
 	gsa := &GServiceAccount{
 		claims: make(map[string]interface{}),
 	}
-	if err = json.Unmarshal(buf, gsa); err != nil {
+	if err := json.Unmarshal(buf, gsa); err != nil {
 		return nil, err
 	}
 	// apply opts
 	for _, o := range opts {
-		if err = o(gsa); err != nil {
+		if err := o(gsa); err != nil {
 			return nil, err
 		}
 	}

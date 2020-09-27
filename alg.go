@@ -167,40 +167,30 @@ var algSet = []struct {
 // provided in the keyset.
 func (alg Algorithm) New(keyset interface{}) (Signer, error) {
 	a := algSet[alg]
-
 	// check hash
 	if !a.hash.Available() {
 		return nil, ErrInvalidHash
 	}
-
-	var s Store
-
 	// load the data
+	var s Store
 	switch p := keyset.(type) {
-	// regular store
-	case Store:
+	case Store: // regular store
 		s = p
-
-	// raw key
-	case []byte:
+	case []byte: // raw key
 		s = &Keystore{Key: p}
-
 	// rsa keys
 	case *rsa.PrivateKey:
 		s = &Keystore{Key: p}
 	case *rsa.PublicKey:
 		s = &Keystore{PubKey: p}
-
 	// ecc keys
 	case *ecdsa.PrivateKey:
 		s = &Keystore{Key: p}
 	case *ecdsa.PublicKey:
 		s = &Keystore{PubKey: p}
-
 	default:
 		return nil, ErrInvalidKeyset
 	}
-
 	return a.init(s, a.hash)
 }
 
@@ -242,7 +232,6 @@ func (alg *Algorithm) UnmarshalText(buf []byte) error {
 		*alg = HS384
 	case "HS512":
 		*alg = HS512
-
 	// rsa-pkcs1v15
 	case "RS256":
 		*alg = RS256
@@ -250,7 +239,6 @@ func (alg *Algorithm) UnmarshalText(buf []byte) error {
 		*alg = RS384
 	case "RS512":
 		*alg = RS512
-
 	// ecc
 	case "ES256":
 		*alg = ES256
@@ -258,7 +246,6 @@ func (alg *Algorithm) UnmarshalText(buf []byte) error {
 		*alg = ES384
 	case "ES512":
 		*alg = ES512
-
 	// rsa-pss
 	case "PS256":
 		*alg = PS256
@@ -266,11 +253,9 @@ func (alg *Algorithm) UnmarshalText(buf []byte) error {
 		*alg = PS384
 	case "PS512":
 		*alg = PS512
-
 	// error
 	default:
 		return ErrInvalidAlgorithm
 	}
-
 	return nil
 }

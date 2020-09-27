@@ -13,7 +13,6 @@ import (
 
 func loadKey(a Algorithm) (Store, error) {
 	var keyfile string
-
 	// determine key
 	algName := a.String()
 	switch algName[:2] {
@@ -24,13 +23,11 @@ func loadKey(a Algorithm) (Store, error) {
 	case "ES":
 		keyfile = "testdata/" + strings.ToLower(algName) + ".pem"
 	}
-
 	// load key
 	s, err := pemutil.LoadFile(keyfile)
 	if err != nil {
 		return nil, err
 	}
-
 	return s, nil
 }
 
@@ -59,13 +56,11 @@ func TestSignAndVerify(t *testing.T) {
 		if err != nil {
 			t.Fatalf("test %d expected no error, got: %v", i, err)
 		}
-
 		// create signer
 		signer, err := test.alg.New(keyset)
 		if err != nil {
 			t.Fatalf("test %d expected no error, got: %v", i, err)
 		}
-
 		// only test valid sigs
 		if test.valid {
 			// split token
@@ -74,10 +69,8 @@ func TestSignAndVerify(t *testing.T) {
 				t.Errorf("test %d %s token should have 3 parts, got: %d", i, test.alg, len(tok))
 				continue
 			}
-
 			// grab stuff
 			buf := []byte(test.tok[:len(tok[0])+len(tokenSep)+len(tok[1])])
-
 			// sign
 			sig, err := signer.Sign(buf)
 			if err != nil {
@@ -88,7 +81,6 @@ func TestSignAndVerify(t *testing.T) {
 				t.Errorf("test %d %s sig should not be nil or empty byte slice", i, test.alg)
 				continue
 			}
-
 			// byte compare
 			algName := test.alg.String()
 			if algName[:2] != "PS" && algName[:2] != "ES" && !bytes.Equal([]byte(tok[2]), sig) {
@@ -97,7 +89,6 @@ func TestSignAndVerify(t *testing.T) {
 				t.Errorf("test %d %s sig are not equal", i, test.alg)
 				continue
 			}
-
 			// verify
 			dec, err := signer.Verify(buf, sig)
 			if err != nil {
@@ -117,13 +108,11 @@ func TestDecodeErrors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not load rsa key, got: %v", err)
 	}
-
 	signer, err := PS256.New(keyset)
 	if err != nil {
 		t.Errorf("expected no error, got: %v", err)
 		return
 	}
-
 	s := &sigger{signer}
 	a, err := PS384.New(keyset)
 	if err != nil {
@@ -131,7 +120,6 @@ func TestDecodeErrors(t *testing.T) {
 		return
 	}
 	b := &sigger{a}
-
 	tests := []string{
 		``,
 		`.`,
@@ -160,11 +148,9 @@ func TestDecodeErrors(t *testing.T) {
 		s.sn(enc(`{"alg":"PS256"}`)+`.`+enc(`{iss:}`), t),
 		b.sn(enc(`{"alg":"PS256"}`)+`.`+enc(`{"iss":"issuer"}`), t),
 	}
-
 	for i, test := range tests {
 		tok := Token{}
-		err := Decode(PS256, signer, []byte(test), &tok)
-		if err == nil {
+		if err := Decode(PS256, signer, []byte(test), &tok); err == nil {
 			t.Errorf("test %d expected no error, got: %v", i, err)
 		}
 	}
@@ -177,20 +163,17 @@ func TestDecode(t *testing.T) {
 		if err != nil {
 			t.Fatalf("test %d expected no error, got: %v", i, err)
 		}
-
 		// create signer
 		signer, err := test.alg.New(keyset)
 		if err != nil {
 			t.Fatalf("test %d expected no error, got: %v", i, err)
 		}
-
 		// split token
 		tok := strings.Split(test.tok, string(tokenSep))
 		if test.valid && len(tok) != 3 {
 			t.Errorf("test %d %s token should have 3 parts, got: %d", i, test.alg, len(tok))
 			continue
 		}
-
 		t0 := Token{}
 		err = signer.Decode([]byte(test.tok), &t0)
 		switch {
@@ -201,15 +184,12 @@ func TestDecode(t *testing.T) {
 			t.Errorf("test %d %s expected err, got nil", i, test.alg)
 			continue
 		}
-
 		if test.valid {
 			if test.alg != t0.Header.Algorithm {
 				t.Errorf("test %d %s decoded header should have alg %s", i, test.alg, test.alg)
 				continue
 			}
-
 			// TODO check that the generated claims match
-
 			if t0.Signature == nil || len(t0.Signature) == 0 {
 				t.Errorf("test %d %s decoded signature should not be nil or empty", i, test.alg)
 				continue
@@ -225,13 +205,11 @@ func TestEncode(t *testing.T) {
 		if err != nil {
 			t.Fatalf("test %d %s expected no error, got: %v", i, test.alg, err)
 		}
-
 		// gen signature
 		signer, err := test.alg.New(keyset)
 		if err != nil {
 			t.Fatalf("test %d %s expected no error, got: %v", i, test.alg, err)
 		}
-
 		b0, err := signer.Encode(test.exp)
 		if err != nil {
 			t.Errorf("test %d %s expected no error, got: %v", i, test.alg, err)
@@ -245,19 +223,16 @@ func TestEncode(t *testing.T) {
 			t.Errorf("test %d %s token should only have [a-zA-Z0-9_-.] characters", i, test.alg)
 			continue
 		}
-
 		t0 := bytes.Split(b0, tokenSep)
 		if len(t0) != 3 {
 			t.Errorf("test %d %s encoded token should have 3 parts", i, test.alg)
 			continue
 		}
-
 		// check sig
 		var e0 bytes.Buffer
 		e0.Write(t0[0])
 		e0.Write(tokenSep)
 		e0.Write(t0[1])
-
 		d0, err := signer.Verify(e0.Bytes(), t0[2])
 		if err != nil {
 			t.Errorf("test %d %s should verify", i, test.alg)
@@ -267,7 +242,6 @@ func TestEncode(t *testing.T) {
 			t.Errorf("test %d %s d0 should not be nil or empty", i, test.alg)
 			continue
 		}
-
 		a0, err := b64.DecodeString(string(t0[2]))
 		if err != nil {
 			t.Errorf("test %d %s t0[2] (signature) should be b64 decodable", i, test.alg)
@@ -281,19 +255,15 @@ func TestEncode(t *testing.T) {
 }
 
 func TestEncodeDecodeCustom(t *testing.T) {
-	var err error
-
 	keyset, err := pemutil.LoadFile("testdata/hmac.pem")
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	// create signer
 	s, err := HS256.New(keyset)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	// custom types
 	type h struct {
 		A Algorithm   `json:"alg,omitempty"`
@@ -308,12 +278,10 @@ func TestEncodeDecodeCustom(t *testing.T) {
 		H h `jwt:"header"`
 		C c `jwt:"payload"`
 	}
-
 	exp := tok{
 		H: h{HS256, "JWT", json.Number("234234234234")},
 		C: c{"foo", 61},
 	}
-
 	// encode
 	buf, err := Encode(HS256, s, exp)
 	if err != nil {
@@ -322,14 +290,11 @@ func TestEncodeDecodeCustom(t *testing.T) {
 	if len(buf) < 1 {
 		t.Error("buf should not be empty")
 	}
-
 	// decode
 	var n tok
-	err = Decode(HS256, s, buf, &n)
-	if err != nil {
+	if err = Decode(HS256, s, buf, &n); err != nil {
 		t.Errorf("expected no error, got: %v", err)
 	}
-
 	// compare
 	if !reflect.DeepEqual(exp, n) {
 		t.Error("expected decoded token to match original")
@@ -353,10 +318,8 @@ func TestPeekErrors(t *testing.T) {
 		enc(`{"foo":"bar"}`) + `.` + enc(`{"foo":"bar"}`) + `.`,
 		enc(`{"alg":"none"}`) + `.` + enc(`{"iss":"issuer"}`) + `.`,
 	}
-
 	for i, test := range tests {
-		_, _, err := PeekAlgorithmAndIssuer([]byte(test))
-		if err == nil {
+		if _, _, err := PeekAlgorithmAndIssuer([]byte(test)); err == nil {
 			t.Errorf("test %d expected error, got nil\n%s\n", i, test)
 		}
 	}

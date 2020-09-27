@@ -46,7 +46,6 @@ type Bearer struct {
 //
 // Use WithClaim option to pass additional claims to the token source.
 func NewTokenSource(signer jwt.Signer, tokenURL string, ctx context.Context, opts ...Option) (*Bearer, error) {
-	var err error
 	b := &Bearer{
 		signer:   signer,
 		tokenURL: tokenURL,
@@ -55,7 +54,7 @@ func NewTokenSource(signer jwt.Signer, tokenURL string, ctx context.Context, opt
 	}
 	// apply opts
 	for _, o := range opts {
-		if err = o(b); err != nil {
+		if err := o(b); err != nil {
 			return nil, fmt.Errorf("jwt/bearer: %v", err)
 		}
 	}
@@ -64,7 +63,6 @@ func NewTokenSource(signer jwt.Signer, tokenURL string, ctx context.Context, opt
 
 // Token satisfies the oauth2.TokenSource interface.
 func (b *Bearer) Token() (*oauth2.Token, error) {
-	var err error
 	claims := make(map[string]interface{}, len(b.claims))
 	for k, val := range b.claims {
 		claims[k] = val

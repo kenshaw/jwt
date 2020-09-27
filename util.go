@@ -8,11 +8,9 @@ import (
 	"reflect"
 )
 
-var (
-	// b64 is the base64 encoding config used for encoding/decoding jwt
-	// parts.
-	b64 = base64.URLEncoding.WithPadding(base64.NoPadding)
-)
+// b64 is the base64 encoding config used for encoding/decoding jwt
+// parts.
+var b64 = base64.URLEncoding.WithPadding(base64.NoPadding)
 
 // getFieldWithTag lookups jwt tag, with specified tagName on obj, returning
 // its reflected value.
@@ -21,7 +19,6 @@ func getFieldWithTag(obj interface{}, tagName string) *reflect.Value {
 	if objVal.Kind() != reflect.Struct {
 		objVal = objVal.Elem()
 	}
-
 	for i := 0; i < objVal.NumField(); i++ {
 		fieldType := objVal.Type().Field(i)
 		if tagName == fieldType.Tag.Get("jwt") {
@@ -29,7 +26,6 @@ func getFieldWithTag(obj interface{}, tagName string) *reflect.Value {
 			return &field
 		}
 	}
-
 	return nil
 }
 
@@ -41,13 +37,11 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 	// reflect values
 	objValElem := reflect.ValueOf(obj).Elem()
 	defaultObjValElem := reflect.ValueOf(defaultObj).Elem()
-
 	// first check type, if same type, then set
 	if objValElem.Type() == defaultObjValElem.Type() {
 		objValElem.Set(defaultObjValElem)
 		return nil
 	}
-
 	// get field with specified jwt tagName (if any)
 	fieldVal := getFieldWithTag(obj, tagName)
 	if fieldVal != nil {
@@ -56,11 +50,9 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 			fieldVal.Set(defaultObjValElem)
 			return nil
 		}
-
 		// otherwise, assign obj address of field
 		obj = fieldVal.Addr().Interface()
 	}
-
 	// decode json
 	d := json.NewDecoder(bytes.NewBuffer(buf))
 	d.UseNumber()
@@ -70,7 +62,6 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 // grabEncodeTargets grabs the fields for the obj.
 func grabEncodeTargets(alg Algorithm, obj interface{}) (interface{}, interface{}, error) {
 	var headerObj, payloadObj interface{}
-
 	// get header
 	if headerVal := getFieldWithTag(obj, "header"); headerVal != nil {
 		headerObj = headerVal.Interface()
@@ -78,7 +69,6 @@ func grabEncodeTargets(alg Algorithm, obj interface{}) (interface{}, interface{}
 	if headerObj == nil {
 		headerObj = alg.Header()
 	}
-
 	// get payload
 	if payloadVal := getFieldWithTag(obj, "payload"); payloadVal != nil {
 		payloadObj = payloadVal.Interface()
@@ -86,7 +76,6 @@ func grabEncodeTargets(alg Algorithm, obj interface{}) (interface{}, interface{}
 	if payloadObj == nil {
 		payloadObj = obj
 	}
-
 	return headerObj, payloadObj, nil
 }
 
@@ -97,13 +86,11 @@ func encodeTargets(alg Algorithm, obj interface{}) (interface{}, interface{}, er
 	case *Token:
 		return val.Header, val.Payload, nil
 	}
-
 	objVal := reflect.ValueOf(obj)
 	objKind := objVal.Kind()
 	if objKind == reflect.Struct || (objKind == reflect.Ptr && objVal.Elem().Kind() == reflect.Struct) {
 		return grabEncodeTargets(alg, obj)
 	}
-
 	return alg.Header(), obj, nil
 }
 
@@ -124,46 +111,36 @@ const (
 //
 // If the fieldName is not present, then an error will be returned.
 func peekField(buf []byte, fieldName string, pos tokenPosition) (string, error) {
-	var err error
-
 	// split token
-	ut := UnverifiedToken{}
-	err = DecodeUnverifiedToken(buf, &ut)
-	if err != nil {
+	var t UnverifiedToken
+	if err := DecodeUnverifiedToken(buf, &t); err != nil {
 		return "", err
 	}
-
 	// determine position decode
 	var typ string
 	var b []byte
 	switch pos {
 	case tokenPositionHeader:
 		typ = "header"
-		b = ut.Header
+		b = t.Header
 	case tokenPositionPayload:
 		typ = "payload"
-		b = ut.Payload
-
+		b = t.Payload
 	default:
 		return "", fmt.Errorf("invalid field %d", pos)
 	}
-
 	// b64 decode
 	dec, err := b64.DecodeString(string(b))
 	if err != nil {
 		return "", fmt.Errorf("could not decode token %s", typ)
 	}
-
 	// json decode
 	m := make(map[string]interface{})
-	err = json.Unmarshal(dec, &m)
-	if err != nil {
+	if err := json.Unmarshal(dec, &m); err != nil {
 		return "", err
 	}
-
 	if val, ok := m[fieldName]; ok {
 		return fmt.Sprintf("%v", val), nil
 	}
-
 	return "", fmt.Errorf("token %s field %s not present or invalid", typ, fieldName)
 }

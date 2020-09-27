@@ -28,34 +28,30 @@ type Keystore struct {
 // PublicKey returns the stored public key for the keystore, alternately
 // generating the public key from the private key if the public key was not
 // supplied and the private key was.
-func (ks *Keystore) PublicKey() (crypto.PublicKey, bool) {
-	ks.rw.RLock()
-	key, pub := ks.Key, ks.PubKey
-	ks.rw.RUnlock()
+func (s *Keystore) PublicKey() (crypto.PublicKey, bool) {
+	s.rw.RLock()
+	key, pub := s.Key, s.PubKey
+	s.rw.RUnlock()
 	if pub != nil {
 		return pub, true
 	}
-
 	// generate the public key
 	if key != nil {
-		ks.rw.Lock()
-		defer ks.rw.Unlock()
-
+		s.rw.Lock()
+		defer s.rw.Unlock()
 		if x, ok := key.(interface {
 			Public() crypto.PublicKey
 		}); ok {
-			ks.PubKey = x.Public()
+			s.PubKey = x.Public()
 		}
-
-		return ks.PubKey, ks.PubKey != nil
+		return s.PubKey, s.PubKey != nil
 	}
-
 	return nil, false
 }
 
 // PrivateKey returns the stored private key for the keystore.
-func (ks *Keystore) PrivateKey() (crypto.PrivateKey, bool) {
-	ks.rw.RLock()
-	defer ks.rw.RUnlock()
-	return ks.Key, ks.Key != nil
+func (s *Keystore) PrivateKey() (crypto.PrivateKey, bool) {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return s.Key, s.Key != nil
 }
