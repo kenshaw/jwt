@@ -43,17 +43,20 @@ type GServiceAccount struct {
 	AuthProviderX509CertURL string `json:"auth_provider_x509_cert_url,omitempty"`
 	ClientX509CertURL       string `json:"client_x509_cert_url,omitempty"`
 
-	expiration time.Duration     `json:"-"`
-	signer     jwt.Signer        `json:"-"`
-	transport  http.RoundTripper `json:"-"`
-	mu         sync.Mutex        `json:"-"`
+	expiration time.Duration          `json:"-"`
+	signer     jwt.Signer             `json:"-"`
+	transport  http.RoundTripper      `json:"-"`
+	claims     map[string]interface{} `json:"-"`
+	mu         sync.Mutex             `json:"-"`
 }
 
 // FromJSON loads service account credentials from the JSON encoded buf.
 func FromJSON(buf []byte, opts ...Option) (*GServiceAccount, error) {
 	var err error
 	// unmarshal
-	gsa := new(GServiceAccount)
+	gsa := &GServiceAccount{
+		claims: make(map[string]interface{}),
+	}
 	if err = json.Unmarshal(buf, gsa); err != nil {
 		return nil, err
 	}
@@ -108,7 +111,7 @@ func (gsa *GServiceAccount) Signer() (jwt.Signer, error) {
 // wrapped with oauth2.ReusableTokenSource prior to being used elsewhere.
 //
 // If additional claims need to be added to the TokenSource (ie, subject or the
-// "sub" field), use jwt/bearer.Claim to add them before wrapping the
+// "sub" field), use WithClaim option to add claims before wrapping the
 // TokenSource with oauth2.ReusableTokenSource.
 func (gsa *GServiceAccount) TokenSource(ctx context.Context, scopes ...string) (*bearer.Bearer, error) {
 	switch {
@@ -136,6 +139,9 @@ func (gsa *GServiceAccount) TokenSource(ctx context.Context, scopes ...string) (
 		bearer.WithClaim("iss", gsa.ClientEmail),
 		bearer.WithClaim("aud", gsa.TokenURI),
 		bearer.WithScope(scopes...),
+	}
+	for k, v := range gsa.claims {
+		opts = append(opts, bearer.WithClaim(k, v))
 	}
 	// add transport
 	if gsa.transport != nil {
@@ -209,5 +215,42 @@ func WithExpiration(expiration time.Duration) Option {
 	return func(gsa *GServiceAccount) error {
 		gsa.expiration = expiration
 		return nil
+	}
+}
+
+// WithClaim is a GServiceAccount option to set additional claims for tokens
+// generated from the token source.
+func WithClaim(name string, v interface{}) Option {
+	return func(gsa *GServiceAccount) error {
+		gsa.claims[name] = v
+		return nil
+	}
+}
+
+// WithSubject is a GServiceAccount option to set a subject ("sub") claim for
+// tokens generated from the token source.
+//
+// This is useful when using domain-wide delegation to impersonate a user.
+//
+// Example:
+//
+// 	import (
+// 		"github.com/kenshaw/jwt/gserviceaccount"
+// 		admin "google.golang.org/api/admin/directory/v1"
+// 	)
+// 	func main() {
+// 		gsa, err := gserviceaccount.FromFile("/path/to/gsa.json", gserviceaccount.WithSubject("user@example.com"))
+// 		if err != nil { /* ... */ }
+// 		cl, err := gsa.Client()
+// 		if err != nil { /* ... */ }
+// 		adminService, err := admin.New(cl)
+// 		if err != nil { /* ... */ }
+// 		users, err := adminService.Users.Domain("example.com").List()
+// 		if err != nil { /* ... */ }
+// 		for _, u := range users.Users { /* ... */ }
+// 	}
+func WithSubject(sub string) Option {
+	return func(gsa *GServiceAccount) error {
+		return WithClaim("sub", sub)(gsa)
 	}
 }

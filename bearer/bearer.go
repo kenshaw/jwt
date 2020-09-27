@@ -44,7 +44,7 @@ type Bearer struct {
 // jwt.Signer. A token redemption will be invoked at the tokenURL using the
 // supplied context.
 //
-// Use the Claim option to pass additional claims to the token source.
+// Use WithClaim option to pass additional claims to the token source.
 func NewTokenSource(signer jwt.Signer, tokenURL string, ctx context.Context, opts ...Option) (*Bearer, error) {
 	var err error
 	b := &Bearer{
