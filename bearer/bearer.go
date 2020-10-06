@@ -1,5 +1,8 @@
 // Package bearer provides a generic oauth2.TokenSource for JWT Bearer Grant
 // Assertions.
+//
+// Please see the gserviceaccount package in this repository for an example of
+// how to use the JWT bearer token source.
 package bearer
 
 import (
@@ -22,11 +25,15 @@ import (
 // GrantType is the JWT grant type assertion value.
 const GrantType = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 
-// Bearer provides a JWT Bearer Grant oauth2.TokenSource that handles redeeming
-// tokens using the JWT bearer grant assertion auth flow.
+// Bearer provides a JWT based, oauth2 token source that generates tokens
+// for redemption with the JWT bearer grant assertion auth flow.
 //
-// This should be wrapped with a oauth2.ReusableTokenSource before using it
-// with oauth2.Transport.
+// This token source can be used with an oauth2 transport to transparently
+// authenticate a client's HTTP requests, and would typically be used with
+// golang.org/x/oauth2.Transport and Go's standard http.Client.
+//
+// This bearer token source should be wrapped by a oauth2.ReusableTokenSource
+// before using with oauth2.Transport.
 type Bearer struct {
 	signer        jwt.Signer
 	tokenURL      string
@@ -44,7 +51,8 @@ type Bearer struct {
 // jwt.Signer. A token redemption will be invoked at the tokenURL using the
 // supplied context.
 //
-// Use WithClaim option to pass additional claims to the token source.
+// Use WithClaim option to pass additional claims to the token source such as
+// token subject or scope.
 func NewTokenSource(signer jwt.Signer, tokenURL string, ctx context.Context, opts ...Option) (*Bearer, error) {
 	b := &Bearer{
 		signer:   signer,
@@ -116,8 +124,7 @@ func (b *Bearer) Token() (*oauth2.Token, error) {
 		ExpiresIn   int64  `json:"expires_in"`
 	}
 	// unmarhsal returned token
-	err = json.Unmarshal(body, &tv)
-	if err != nil {
+	if err = json.Unmarshal(body, &tv); err != nil {
 		return nil, fmt.Errorf("jwt/bearer: cannot fetch token: %v", err)
 	}
 	ret := &oauth2.Token{
@@ -142,7 +149,8 @@ func (b *Bearer) Token() (*oauth2.Token, error) {
 	return ret, nil
 }
 
-// Client returns a HTTP client using the bearer token.
+// Client returns a HTTP client with an oauth2 transport using the bearer token
+// source.
 func (b *Bearer) Client() *http.Client {
 	return &http.Client{
 		Transport: &oauth2.Transport{
@@ -152,70 +160,81 @@ func (b *Bearer) Client() *http.Client {
 	}
 }
 
-// Option represents a Bearer option.
+// Option is a bearer token source option.
 type Option func(*Bearer) error
 
-// WithExpiresIn is an option that will set the expiration duration generated
-// for tokens to the specified duration.
+// WithExpiresIn is a bearer token source option that sets the expiration
+// duration for generated tokens.
 func WithExpiresIn(d time.Duration) Option {
-	return func(tok *Bearer) error {
+	return func(b *Bearer) error {
 		if d != 0 {
-			tok.addExpiration = true
-			tok.expiresIn = d
+			b.addExpiration = true
+			b.expiresIn = d
 		} else {
-			tok.addExpiration = false
-			tok.expiresIn = 0
+			b.addExpiration = false
+			b.expiresIn = 0
 		}
 		return nil
 	}
 }
 
-// WithIssuedAt is an option that toggles whether or not the Issued At ("iat")
-// field is generated for the token.
+// WithIssuedAt is a bearer token source option that adds the Issued At ("iat")
+// field to generated tokens.
 func WithIssuedAt(enable bool) Option {
-	return func(tok *Bearer) error {
-		tok.addIssuedAt = enable
+	return func(b *Bearer) error {
+		b.addIssuedAt = enable
 		return nil
 	}
 }
 
-// WithNotBefore is an option that toggles whether or not the Not Before
-// ("nbf") field is generated for the token.
+// WithNotBefore is a bearer token source option that adds the Not Before
+// ("nbf") field to generated tokens.
 func WithNotBefore(enable bool) Option {
-	return func(tok *Bearer) error {
-		tok.addNotBefore = enable
+	return func(b *Bearer) error {
+		b.addNotBefore = enable
 		return nil
 	}
 }
 
-// WithClaim is an option that adds an additional claim that is generated with
-// the token.
+// WithClaim is a bearer token source option that adds additional claims to
+// generated tokens.
 func WithClaim(name string, v interface{}) Option {
-	return func(tok *Bearer) error {
-		if tok.claims == nil {
+	return func(b *Bearer) error {
+		if b.claims == nil {
 			return errors.New("attempting to add claim to improperly created token")
 		}
-		tok.claims[name] = v
+		b.claims[name] = v
 		return nil
 	}
 }
 
-// WithScope is an option that adds a Scope ("scope") field to generated
-// tokens. Scopes are joined with a space (" ") separator.
+// WithSubject is a bearer token source option that adds the Subject ("sub")
+// claim to generated tokens.
+func WithSubject(subject string) Option {
+	return func(b *Bearer) error {
+		return WithClaim("sub", subject)(b)
+	}
+}
+
+// WithScope is a bearer token source option that adds a Scope ("scope") claim
+// to generated tokens.
+//
+// Note: Scopes are joined with a space (" "). Use WithClaim option if a
+// different separator is required.
 func WithScope(scopes ...string) Option {
-	return func(tok *Bearer) error {
+	return func(b *Bearer) error {
 		if len(scopes) > 0 {
-			return WithClaim("scope", strings.Join(scopes, " "))(tok)
+			return WithClaim("scope", strings.Join(scopes, " "))(b)
 		}
 		return nil
 	}
 }
 
-// WithTransport is an option that sets an underlying client transport to the
-// exchange process.
+// WithTransport is a bearer token source option that sets the HTTP client
+// transport to use during token exchange.
 func WithTransport(transport http.RoundTripper) Option {
-	return func(tok *Bearer) error {
-		tok.transport = transport
+	return func(b *Bearer) error {
+		b.transport = transport
 		return nil
 	}
 }
