@@ -3,5 +3,7 @@ _example/example
 _example/example.exe
 cmd/jwt/jwt
 cmd/jwt/jwt.exe
+cmd/gurl/gurl
+cmd/gurl/gurl.exe
 /jwt
 /jwt.exe
