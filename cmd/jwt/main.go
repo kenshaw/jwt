@@ -30,7 +30,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -42,12 +42,12 @@ import (
 )
 
 func main() {
-	flagEnc := flag.Bool("enc", false, "encode token from json data provided from stdin, or via name=value pairs passed on the command line")
-	flagDec := flag.Bool("dec", false, "decode and verify token read from stdin using the provided key data")
-	flagKey := flag.String("k", "", "path to PEM-encoded file or JSON file containing key data")
-	flagAlg := flag.String("alg", "", "override signing algorithm")
+	enc := flag.Bool("enc", false, "encode token from json data provided from stdin, or via name=value pairs passed on the command line")
+	dec := flag.Bool("dec", false, "decode and verify token read from stdin using the provided key data")
+	key := flag.String("k", "", "path to PEM-encoded file or JSON file containing key data")
+	alg := flag.String("alg", "", "override signing algorithm")
 	flag.Parse()
-	if err := run(*flagEnc, *flagDec, *flagKey, *flagAlg, flag.Args()); err != nil {
+	if err := run(*enc, *dec, *key, *alg, flag.Args()); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
@@ -67,7 +67,7 @@ func run(enc, dec bool, key, algType string, args []string) error {
 	if len(args) > 0 && enc {
 		in, err = buildEncArgs(args)
 	} else {
-		in, err = ioutil.ReadAll(os.Stdin)
+		in, err = io.ReadAll(os.Stdin)
 	}
 	if err != nil {
 		return err
@@ -101,9 +101,9 @@ func run(enc, dec bool, key, algType string, args []string) error {
 	var out []byte
 	switch {
 	case dec:
-		out, err = doDec(signer, in)
+		out, err = decode(signer, in)
 	case enc:
-		out, err = doEnc(signer, in)
+		out, err = encode(signer, in)
 	default:
 		return errors.New("please specify -enc or -dec")
 	}
@@ -126,7 +126,7 @@ func run(enc, dec bool, key, algType string, args []string) error {
 // is returned.
 func loadKeyData(path string) (pemutil.Store, jwt.Algorithm, error) {
 	// check if it's json data
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		return nil, jwt.NONE, err
 	}
@@ -244,8 +244,8 @@ type UnstructuredToken struct {
 	Signature []byte                 `json:"signature" jwt:"signature"`
 }
 
-// doDec decodes in as a JWT.
-func doDec(signer jwt.Signer, in []byte) ([]byte, error) {
+// decode decodes in as a JWT.
+func decode(signer jwt.Signer, in []byte) ([]byte, error) {
 	// decode token
 	t := UnstructuredToken{}
 	if err := signer.Decode(bytes.TrimSpace(in), &t); err != nil {
@@ -259,8 +259,8 @@ func doDec(signer jwt.Signer, in []byte) ([]byte, error) {
 	return out, nil
 }
 
-// doEnc encodes in as the payload in a JWT.
-func doEnc(signer jwt.Signer, in []byte) ([]byte, error) {
+// encode encodes in as the payload in a JWT.
+func encode(signer jwt.Signer, in []byte) ([]byte, error) {
 	// make sure its valid json first
 	m := make(map[string]interface{})
 	// do the initial decode

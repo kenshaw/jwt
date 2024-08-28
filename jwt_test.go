@@ -149,7 +149,7 @@ func TestDecodeErrors(t *testing.T) {
 		b.sn(enc(`{"alg":"PS256"}`)+`.`+enc(`{"iss":"issuer"}`), t),
 	}
 	for i, test := range tests {
-		tok := Token{}
+		var tok Token
 		if err := Decode(PS256, signer, []byte(test), &tok); err == nil {
 			t.Errorf("test %d expected no error, got: %v", i, err)
 		}

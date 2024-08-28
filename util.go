@@ -103,7 +103,7 @@ const (
 	tokenPositionHeader tokenPosition = iota
 	tokenPositionPayload
 
-//	tokenPositionSignature
+// tokenPositionSignature
 )
 
 // peekField looks at an undecoded JWT, JSON decoding the data at pos, and
@@ -121,11 +121,9 @@ func peekField(buf []byte, fieldName string, pos tokenPosition) (string, error) 
 	var b []byte
 	switch pos {
 	case tokenPositionHeader:
-		typ = "header"
-		b = t.Header
+		typ, b = "header", t.Header
 	case tokenPositionPayload:
-		typ = "payload"
-		b = t.Payload
+		typ, b = "payload", t.Payload
 	default:
 		return "", fmt.Errorf("invalid field %d", pos)
 	}
