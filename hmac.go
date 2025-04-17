@@ -16,7 +16,7 @@ type HmacSigner struct {
 func NewHMACSigner(alg Algorithm) func(Store, crypto.Hash) (Signer, error) {
 	return func(store Store, hash crypto.Hash) (Signer, error) {
 		var ok bool
-		var keyRaw interface{}
+		var keyRaw any
 		var key []byte
 		// check private key
 		if keyRaw, ok = store.PrivateKey(); !ok {
@@ -96,12 +96,12 @@ func (s *HmacSigner) Verify(buf, sig []byte) ([]byte, error) {
 }
 
 // Encode serializes the JSON marshalable obj data as a JWT.
-func (s *HmacSigner) Encode(obj interface{}) ([]byte, error) {
+func (s *HmacSigner) Encode(obj any) ([]byte, error) {
 	return s.alg.Encode(s, obj)
 }
 
 // Decode decodes a serialized token, verifying the signature, storing the
 // decoded data from the token in obj.
-func (s *HmacSigner) Decode(buf []byte, obj interface{}) error {
+func (s *HmacSigner) Decode(buf []byte, obj any) error {
 	return s.alg.Decode(s, buf, obj)
 }

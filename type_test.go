@@ -23,7 +23,7 @@ func TestClaimsMarshalUnmarshal(t *testing.T) {
 	if expr != c0.Expiration {
 		t.Errorf("expr and c0.Expiration should equal -- %v / %v", expr, c0.Expiration)
 	}
-	if "issuer" != c0.Issuer {
+	if c0.Issuer != "issuer" {
 		t.Errorf("c0.Issuer should be 'issuer'")
 	}
 	c1 := Claims{}

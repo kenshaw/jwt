@@ -78,7 +78,7 @@ type RSASigner struct {
 func NewRSASigner(alg Algorithm, method RSASignerVerifier) func(Store, crypto.Hash) (Signer, error) {
 	return func(store Store, hash crypto.Hash) (Signer, error) {
 		var ok bool
-		var privRaw, pubRaw interface{}
+		var privRaw, pubRaw any
 		var priv *rsa.PrivateKey
 		var pub *rsa.PublicKey
 		// check private key
@@ -179,12 +179,12 @@ func (s *RSASigner) Verify(buf, sig []byte) ([]byte, error) {
 }
 
 // Encode serializes the JSON marshalable obj data as a JWT.
-func (s *RSASigner) Encode(obj interface{}) ([]byte, error) {
+func (s *RSASigner) Encode(obj any) ([]byte, error) {
 	return s.alg.Encode(s, obj)
 }
 
 // Decode decodes a serialized token, verifying the signature, storing the
 // decoded data from the token in obj.
-func (s *RSASigner) Decode(buf []byte, obj interface{}) error {
+func (s *RSASigner) Decode(buf []byte, obj any) error {
 	return s.alg.Decode(s, buf, obj)
 }

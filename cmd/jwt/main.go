@@ -131,7 +131,7 @@ func loadKeyData(path string) (pemutil.Store, jwt.Algorithm, error) {
 		return nil, jwt.NONE, err
 	}
 	// attempt json decode
-	v := make(map[string]interface{})
+	v := make(map[string]any)
 	if err = json.Unmarshal(buf, &v); err != nil {
 		// not json encoded, so skip
 		keyset, err := pemutil.LoadFile(path)
@@ -211,11 +211,11 @@ func getAlgFromKeyData(pem pemutil.Store) (jwt.Algorithm, error) {
 // name=val as a json object.
 func buildEncArgs(args []string) ([]byte, error) {
 	// loop over args, splitting on '=', and attempt parsing of value
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	for _, arg := range args {
 		a := strings.SplitN(arg, "=", 2)
 		// attempt to parse
-		var val interface{}
+		var val any
 		if len(a) == 1 { // assume bool, set as true
 			val = true
 		} else if u, err := strconv.ParseUint(a[1], 10, 64); err == nil {
@@ -239,9 +239,9 @@ func buildEncArgs(args []string) ([]byte, error) {
 // UnstructuredToken is a jwt compatible token for encoding/decoding unknown
 // jwt payloads.
 type UnstructuredToken struct {
-	Header    map[string]interface{} `json:"header" jwt:"header"`
-	Payload   map[string]interface{} `json:"payload" jwt:"payload"`
-	Signature []byte                 `json:"signature" jwt:"signature"`
+	Header    map[string]any `json:"header" jwt:"header"`
+	Payload   map[string]any `json:"payload" jwt:"payload"`
+	Signature []byte         `json:"signature" jwt:"signature"`
 }
 
 // decode decodes in as a JWT.
@@ -262,7 +262,7 @@ func decode(signer jwt.Signer, in []byte) ([]byte, error) {
 // encode encodes in as the payload in a JWT.
 func encode(signer jwt.Signer, in []byte) ([]byte, error) {
 	// make sure its valid json first
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	// do the initial decode
 	d := json.NewDecoder(bytes.NewBuffer(in))
 	d.UseNumber()

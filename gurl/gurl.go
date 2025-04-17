@@ -11,8 +11,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -229,7 +229,7 @@ func FromJSON(buf []byte) (*Signer, error) {
 // Google Service Account credentials can be downloaded from the Google Cloud
 // console: https://console.cloud.google.com/iam-admin/serviceaccounts/
 func FromFile(path string) (*Signer, error) {
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("could not read google service account credentials file: %v", err)
 	}

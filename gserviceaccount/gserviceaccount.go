@@ -8,9 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
@@ -43,18 +43,18 @@ type GServiceAccount struct {
 	AuthProviderX509CertURL string `json:"auth_provider_x509_cert_url,omitempty"`
 	ClientX509CertURL       string `json:"client_x509_cert_url,omitempty"`
 
-	expiration time.Duration          `json:"-"`
-	signer     jwt.Signer             `json:"-"`
-	transport  http.RoundTripper      `json:"-"`
-	claims     map[string]interface{} `json:"-"`
-	mu         sync.Mutex             `json:"-"`
+	expiration time.Duration     `json:"-"`
+	signer     jwt.Signer        `json:"-"`
+	transport  http.RoundTripper `json:"-"`
+	claims     map[string]any    `json:"-"`
+	mu         sync.Mutex        `json:"-"`
 }
 
 // FromJSON loads service account credentials from the JSON encoded buf.
 func FromJSON(buf []byte, opts ...Option) (*GServiceAccount, error) {
 	// unmarshal
 	gsa := &GServiceAccount{
-		claims: make(map[string]interface{}),
+		claims: make(map[string]any),
 	}
 	if err := json.Unmarshal(buf, gsa); err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func FromJSON(buf []byte, opts ...Option) (*GServiceAccount, error) {
 
 // FromReader loads Google service account credentials from a reader.
 func FromReader(r io.Reader, opts ...Option) (*GServiceAccount, error) {
-	buf, err := ioutil.ReadAll(r)
+	buf, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func FromReader(r io.Reader, opts ...Option) (*GServiceAccount, error) {
 
 // FromFile loads Google service account credentials from a reader.
 func FromFile(path string, opts ...Option) (*GServiceAccount, error) {
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -165,13 +165,13 @@ func (gsa *GServiceAccount) TokenSource(ctx context.Context, scopes ...string) (
 // When called with the appropriate scopes, the created client can be used to
 // create any Google API Service:
 //
-// 		import (
-// 			dns "google.golang.org/api/dns/v2beta1"
-//      )
-//      cl, err := gsa.Client(ctx, dns.CloudPlatformScope, dns.NdevClouddnsReadwriteScope)
-// 		if err != nil { /* ... */ }
-//      dnsService, err := dns.New(cl)
-// 		if err != nil { /* ... */ }
+//			import (
+//				dns "google.golang.org/api/dns/v2beta1"
+//	     )
+//	     cl, err := gsa.Client(ctx, dns.CloudPlatformScope, dns.NdevClouddnsReadwriteScope)
+//			if err != nil { /* ... */ }
+//	     dnsService, err := dns.New(cl)
+//			if err != nil { /* ... */ }
 //
 // Note: this is a convenience func only.
 func (gsa *GServiceAccount) Client(ctx context.Context, scopes ...string) (*http.Client, error) {
@@ -219,7 +219,7 @@ func WithExpiration(expiration time.Duration) Option {
 
 // WithClaim is a GServiceAccount option to set additional claims for tokens
 // generated from the token source.
-func WithClaim(name string, v interface{}) Option {
+func WithClaim(name string, v any) Option {
 	return func(gsa *GServiceAccount) error {
 		gsa.claims[name] = v
 		return nil
@@ -233,21 +233,21 @@ func WithClaim(name string, v interface{}) Option {
 //
 // Example:
 //
-// 	import (
-// 		"github.com/kenshaw/jwt/gserviceaccount"
-// 		admin "google.golang.org/api/admin/directory/v1"
-// 	)
-// 	func main() {
-// 		gsa, err := gserviceaccount.FromFile("/path/to/gsa.json", gserviceaccount.WithSubject("user@example.com"))
-// 		if err != nil { /* ... */ }
-// 		cl, err := gsa.Client()
-// 		if err != nil { /* ... */ }
-// 		adminService, err := admin.New(cl)
-// 		if err != nil { /* ... */ }
-// 		users, err := adminService.Users.Domain("example.com").List()
-// 		if err != nil { /* ... */ }
-// 		for _, u := range users.Users { /* ... */ }
-// 	}
+//	import (
+//		"github.com/kenshaw/jwt/gserviceaccount"
+//		admin "google.golang.org/api/admin/directory/v1"
+//	)
+//	func main() {
+//		gsa, err := gserviceaccount.FromFile("/path/to/gsa.json", gserviceaccount.WithSubject("user@example.com"))
+//		if err != nil { /* ... */ }
+//		cl, err := gsa.Client()
+//		if err != nil { /* ... */ }
+//		adminService, err := admin.New(cl)
+//		if err != nil { /* ... */ }
+//		users, err := adminService.Users.Domain("example.com").List()
+//		if err != nil { /* ... */ }
+//		for _, u := range users.Users { /* ... */ }
+//	}
 func WithSubject(sub string) Option {
 	return func(gsa *GServiceAccount) error {
 		return WithClaim("sub", sub)(gsa)

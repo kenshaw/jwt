@@ -50,7 +50,7 @@ func (s *sigger) sn(v string, t *testing.T) string {
 }
 
 func TestSignAndVerify(t *testing.T) {
-	for i, test := range getTests() {
+	for i, test := range jwtTests() {
 		// load key
 		keyset, err := loadKey(test.alg)
 		if err != nil {
@@ -157,7 +157,7 @@ func TestDecodeErrors(t *testing.T) {
 }
 
 func TestDecode(t *testing.T) {
-	for i, test := range getTests() {
+	for i, test := range jwtTests() {
 		// load key
 		keyset, err := loadKey(test.alg)
 		if err != nil {
@@ -190,7 +190,7 @@ func TestDecode(t *testing.T) {
 				continue
 			}
 			// TODO check that the generated claims match
-			if t0.Signature == nil || len(t0.Signature) == 0 {
+			if len(t0.Signature) == 0 {
 				t.Errorf("test %d %s decoded signature should not be nil or empty", i, test.alg)
 				continue
 			}
@@ -199,7 +199,7 @@ func TestDecode(t *testing.T) {
 }
 
 func TestEncode(t *testing.T) {
-	for i, test := range getTests() {
+	for i, test := range jwtTests() {
 		// load key
 		keyset, err := loadKey(test.alg)
 		if err != nil {
@@ -331,10 +331,10 @@ func TestPeek(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected no error, got: %v", err)
 	}
-	if "issuer" != issuer {
+	if issuer != "issuer" {
 		t.Errorf("issuer should be 'issuer'")
 	}
-	if ES256 != alg {
+	if alg != ES256 {
 		t.Errorf("alg should be ES256")
 	}
 }

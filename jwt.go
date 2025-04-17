@@ -6,32 +6,31 @@
 // The API is designed to be instantly familiar to users of the standard crypto
 // and json packages:
 //
-//		// create jwt.Signer from a key store
-//		rs384 := jwt.RS384.New(myKeyStore())
+//	// create jwt.Signer from a key store
+//	rs384 := jwt.RS384.New(myKeyStore())
 //
-//		// create claims
-//		claims := jwt.Claims{
-//			Issuer: "user@example.com",
-//		}
+//	// create claims
+//	claims := jwt.Claims{
+//		Issuer: "user@example.com",
+//	}
 //
-//		// encode claims as a JWT:
-//		buf, err := rs384.Encode(&claims)
-//		if err != nil {
-//			log.Fatalln(err)
-//		}
-//		fmt.Printf("token: %s\n", string(buf))
+//	// encode claims as a JWT:
+//	buf, err := rs384.Encode(&claims)
+//	if err != nil {
+//		log.Fatalln(err)
+//	}
+//	fmt.Printf("token: %s\n", string(buf))
 //
-// 		// decode and verify claims:
-//		cl2 := jwt.Claims{}
-//		err = rs384.Decode(buf, &cl2)
-//		if err == jwt.ErrInvalidSignature {
-//			// invalid signature
-//		} else if err != nil {
-//			// handle general error
-//		}
+//	// decode and verify claims:
+//	cl2 := jwt.Claims{}
+//	err = rs384.Decode(buf, &cl2)
+//	if err == jwt.ErrInvalidSignature {
+//		// invalid signature
+//	} else if err != nil {
+//		// handle general error
+//	}
 //
-//		fmt.Printf("decoded claims: %+v\n", cl2)
-//
+//	fmt.Printf("decoded claims: %+v\n", cl2)
 package jwt
 
 import (
@@ -49,7 +48,7 @@ var tokenSep = []byte{'.'}
 // If the token or signature is invalid, ErrInvalidToken or ErrInvalidSignature
 // will be returned, respectively. Otherwise, any other errors encountered
 // during token decoding will be returned.
-func Decode(alg Algorithm, signer Signer, buf []byte, obj interface{}) error {
+func Decode(alg Algorithm, signer Signer, buf []byte, obj any) error {
 	// split token
 	ut := UnverifiedToken{}
 	if err := DecodeUnverifiedToken(buf, &ut); err != nil {
@@ -102,7 +101,7 @@ func Decode(alg Algorithm, signer Signer, buf []byte, obj interface{}) error {
 
 // Encode encodes a JWT using the Algorithm and Signer, returning the URL-safe
 // encoded token or any errors encountered during encoding.
-func Encode(alg Algorithm, signer Signer, obj interface{}) ([]byte, error) {
+func Encode(alg Algorithm, signer Signer, obj any) ([]byte, error) {
 	// grab encode targets
 	headerObj, payloadObj, err := encodeTargets(alg, obj)
 	if err != nil {

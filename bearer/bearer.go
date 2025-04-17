@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -43,7 +42,7 @@ type Bearer struct {
 	addIssuedAt   bool
 	addNotBefore  bool
 	expiresIn     time.Duration
-	claims        map[string]interface{}
+	claims        map[string]any
 }
 
 // NewTokenSource creates a oauth2.TokenSource that generates auth tokens
@@ -58,7 +57,7 @@ func NewTokenSource(signer jwt.Signer, tokenURL string, ctx context.Context, opt
 		signer:   signer,
 		tokenURL: tokenURL,
 		context:  ctx,
-		claims:   make(map[string]interface{}),
+		claims:   make(map[string]any),
 	}
 	// apply opts
 	for _, o := range opts {
@@ -71,7 +70,7 @@ func NewTokenSource(signer jwt.Signer, tokenURL string, ctx context.Context, opt
 
 // Token satisfies the oauth2.TokenSource interface.
 func (b *Bearer) Token() (*oauth2.Token, error) {
-	claims := make(map[string]interface{}, len(b.claims))
+	claims := make(map[string]any, len(b.claims))
 	for k, val := range b.claims {
 		claims[k] = val
 	}
@@ -108,7 +107,7 @@ func (b *Bearer) Token() (*oauth2.Token, error) {
 	}
 	defer res.Body.Close()
 	// read response
-	body, err := ioutil.ReadAll(io.LimitReader(res.Body, 1<<20))
+	body, err := io.ReadAll(io.LimitReader(res.Body, 1<<20))
 	if err != nil {
 		return nil, fmt.Errorf("jwt/bearer: cannot fetch token: %v", err)
 	}
@@ -198,7 +197,7 @@ func WithNotBefore(enable bool) Option {
 
 // WithClaim is a bearer token source option that adds additional claims to
 // generated tokens.
-func WithClaim(name string, v interface{}) Option {
+func WithClaim(name string, v any) Option {
 	return func(b *Bearer) error {
 		if b.claims == nil {
 			return errors.New("attempting to add claim to improperly created token")

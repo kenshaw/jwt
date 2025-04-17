@@ -25,7 +25,7 @@ func TestDecodeToObjOrFieldWithTag(t *testing.T) {
 	if err := decodeToObjOrFieldWithTag(buf, &dst0, "child", &def0); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	if "foo" != dst0.Foo {
+	if dst0.Foo != "foo" {
 		t.Fatalf("dst0.Foo should be 'foo', is: '%s'", dst0.Foo)
 	}
 	// types don't match, and no field tagged with jwt:child, so decode buf
@@ -35,10 +35,10 @@ func TestDecodeToObjOrFieldWithTag(t *testing.T) {
 	if err := decodeToObjOrFieldWithTag(buf, &dst1, "child", &def1); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	if "notfoo" != dst1.Foo {
+	if dst1.Foo != "notfoo" {
 		t.Fatalf("dst1.Foo should be 'notfoo', is: '%s'", dst1.Foo)
 	}
-	if "notbar" != dst1.Bar {
+	if dst1.Bar != "notbar" {
 		t.Fatalf("dst1.Bar should be 'bar', is: '%s'", dst1.Foo)
 	}
 	// parent has field tagged with jwt:child, which is same type as def, so
@@ -48,7 +48,7 @@ func TestDecodeToObjOrFieldWithTag(t *testing.T) {
 	if err := decodeToObjOrFieldWithTag(buf, &dst2, "child", &def2); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	if "foo" != dst2.Child.Foo {
+	if dst2.Child.Foo != "foo" {
 		t.Fatalf("dst2.Child.Foo should be 'foo', is: '%s'", dst2.Child.Foo)
 	}
 	// parent has field tagged with jwt:child, but is of different type than
@@ -58,10 +58,10 @@ func TestDecodeToObjOrFieldWithTag(t *testing.T) {
 	if err := decodeToObjOrFieldWithTag(buf, &dst3, "child", &def3); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	if "notfoo" != dst3.Child.Foo {
+	if dst3.Child.Foo != "notfoo" {
 		t.Fatalf("dst3.Child.Foo should be 'notfoo', is: '%s'", dst3.Child.Foo)
 	}
-	if "notbar" != dst3.Child.Bar {
+	if dst3.Child.Bar != "notbar" {
 		t.Fatalf("dest3.Child.Bar should be 'notbar', is: '%s'", dst3.Child.Bar)
 	}
 	// force error (bad json)
@@ -72,23 +72,23 @@ func TestDecodeToObjOrFieldWithTag(t *testing.T) {
 	}
 }
 
-type tc map[string]interface{}
+type tc map[string]any
 
-type j struct {
+type jwtTest struct {
 	alg   Algorithm // alg to test
 	exp   tc        // expected test claims
 	tok   string    // test token data
 	valid bool
 }
 
-func getTests() []j {
+func jwtTests() []jwtTest {
 	ec := tc{
 		"iss":                        "joe",
 		"exp":                        1300819380,
 		"http://example.com/is_root": true,
 	}
 	fb := tc{"foo": "bar"}
-	return []j{
+	return []jwtTest{
 		// hmac good
 		{HS256, ec, "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk", true},
 		{HS384, ec, "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9.eyJleHAiOjEuMzAwODE5MzhlKzA5LCJodHRwOi8vZXhhbXBsZS5jb20vaXNfcm9vdCI6dHJ1ZSwiaXNzIjoiam9lIn0.KWZEuOD5lbBxZ34g7F-SlVLAQ_r5KApWNWlZIIMyQVz5Zs58a7XdNzj5_0EcNoOy", true},

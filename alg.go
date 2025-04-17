@@ -33,11 +33,11 @@ type Signer interface {
 	Verify(buf, sig []byte) ([]byte, error)
 
 	// Encode encodes obj as a serialized JWT.
-	Encode(obj interface{}) ([]byte, error)
+	Encode(obj any) ([]byte, error)
 
 	// Decode decodes a serialized JWT in buf into obj, and verifying the JWT
 	// signature in the process.
-	Decode(buf []byte, obj interface{}) error
+	Decode(buf []byte, obj any) error
 }
 
 const (
@@ -165,7 +165,7 @@ var algSet = []struct {
 // If a private key is not provided, tokens cannot be Encode'd.  Public keys
 // will be automatically generated for RSA and ECC private keys if none were
 // provided in the keyset.
-func (alg Algorithm) New(keyset interface{}) (Signer, error) {
+func (alg Algorithm) New(keyset any) (Signer, error) {
 	a := algSet[alg]
 	// check hash
 	if !a.hash.Available() {
@@ -203,7 +203,7 @@ func (alg Algorithm) Header() Header {
 }
 
 // Encode serializes a JWT using the Algorithm and Signer.
-func (alg Algorithm) Encode(signer Signer, obj interface{}) ([]byte, error) {
+func (alg Algorithm) Encode(signer Signer, obj any) ([]byte, error) {
 	return Encode(alg, signer, obj)
 }
 
@@ -213,7 +213,7 @@ func (alg Algorithm) Encode(signer Signer, obj interface{}) ([]byte, error) {
 // If the token or signature is invalid, ErrInvalidToken or ErrInvalidSignature
 // will be returned, respectively. Otherwise, any other errors encountered
 // during token decoding will be returned.
-func (alg Algorithm) Decode(signer Signer, buf []byte, obj interface{}) error {
+func (alg Algorithm) Decode(signer Signer, buf []byte, obj any) error {
 	return Decode(alg, signer, buf, obj)
 }
 

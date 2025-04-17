@@ -14,7 +14,7 @@ var b64 = base64.URLEncoding.WithPadding(base64.NoPadding)
 
 // getFieldWithTag lookups jwt tag, with specified tagName on obj, returning
 // its reflected value.
-func getFieldWithTag(obj interface{}, tagName string) *reflect.Value {
+func getFieldWithTag(obj any, tagName string) *reflect.Value {
 	objVal := reflect.ValueOf(obj)
 	if objVal.Kind() != reflect.Struct {
 		objVal = objVal.Elem()
@@ -33,7 +33,7 @@ func getFieldWithTag(obj interface{}, tagName string) *reflect.Value {
 // specified jwt tagName. If the provided obj's has the same type as
 // defaultObj, then the obj is set to the defaultObj, otherwise an attempt is
 // made to json.Decode the buf into obj.
-func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defaultObj interface{}) error {
+func decodeToObjOrFieldWithTag(buf []byte, obj any, tagName string, defaultObj any) error {
 	// reflect values
 	objValElem := reflect.ValueOf(obj).Elem()
 	defaultObjValElem := reflect.ValueOf(defaultObj).Elem()
@@ -60,8 +60,8 @@ func decodeToObjOrFieldWithTag(buf []byte, obj interface{}, tagName string, defa
 }
 
 // grabEncodeTargets grabs the fields for the obj.
-func grabEncodeTargets(alg Algorithm, obj interface{}) (interface{}, interface{}, error) {
-	var headerObj, payloadObj interface{}
+func grabEncodeTargets(alg Algorithm, obj any) (any, any, error) {
+	var headerObj, payloadObj any
 	// get header
 	if headerVal := getFieldWithTag(obj, "header"); headerVal != nil {
 		headerObj = headerVal.Interface()
@@ -80,7 +80,7 @@ func grabEncodeTargets(alg Algorithm, obj interface{}) (interface{}, interface{}
 }
 
 // encodeTargets determines what to encode.
-func encodeTargets(alg Algorithm, obj interface{}) (interface{}, interface{}, error) {
+func encodeTargets(alg Algorithm, obj any) (any, any, error) {
 	// determine what to encode
 	switch val := obj.(type) {
 	case *Token:
@@ -133,7 +133,7 @@ func peekField(buf []byte, fieldName string, pos tokenPosition) (string, error) 
 		return "", fmt.Errorf("could not decode token %s", typ)
 	}
 	// json decode
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	if err := json.Unmarshal(dec, &m); err != nil {
 		return "", err
 	}

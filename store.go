@@ -17,10 +17,10 @@ type Store interface {
 // Keystore is a simple type providing a Store implementation.
 type Keystore struct {
 	// Key is the private key.
-	Key interface{}
+	Key any
 
 	// PublicKey is the public key.
-	PubKey interface{}
+	PubKey any
 
 	rw sync.RWMutex
 }

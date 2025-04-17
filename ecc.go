@@ -28,7 +28,7 @@ func NewEllipticSigner(alg Algorithm, curve elliptic.Curve) func(Store, crypto.H
 	}
 	return func(store Store, hash crypto.Hash) (Signer, error) {
 		var ok bool
-		var privRaw, pubRaw interface{}
+		var privRaw, pubRaw any
 		var priv *ecdsa.PrivateKey
 		var pub *ecdsa.PublicKey
 		// check private key
@@ -153,12 +153,12 @@ func (s *EccSigner) Verify(buf, sig []byte) ([]byte, error) {
 }
 
 // Encode serializes the JSON marshalable obj data as a JWT.
-func (s *EccSigner) Encode(obj interface{}) ([]byte, error) {
+func (s *EccSigner) Encode(obj any) ([]byte, error) {
 	return s.alg.Encode(s, obj)
 }
 
 // Decode decodes a serialized token, verifying the signature, storing the
 // decoded data from the token in obj.
-func (s *EccSigner) Decode(buf []byte, obj interface{}) error {
+func (s *EccSigner) Decode(buf []byte, obj any) error {
 	return s.alg.Decode(s, buf, obj)
 }
