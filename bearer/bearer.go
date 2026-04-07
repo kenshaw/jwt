@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -71,9 +72,7 @@ func NewTokenSource(signer jwt.Signer, tokenURL string, ctx context.Context, opt
 // Token satisfies the oauth2.TokenSource interface.
 func (b *Bearer) Token() (*oauth2.Token, error) {
 	claims := make(map[string]any, len(b.claims))
-	for k, val := range b.claims {
-		claims[k] = val
-	}
+	maps.Copy(claims, b.claims)
 	now := time.Now()
 	n := json.Number(strconv.FormatInt(now.Unix(), 10))
 	// add expiration

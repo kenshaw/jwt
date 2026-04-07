@@ -88,7 +88,7 @@ func encodeTargets(alg Algorithm, obj any) (any, any, error) {
 	}
 	objVal := reflect.ValueOf(obj)
 	objKind := objVal.Kind()
-	if objKind == reflect.Struct || (objKind == reflect.Ptr && objVal.Elem().Kind() == reflect.Struct) {
+	if objKind == reflect.Struct || (objKind == reflect.Pointer && objVal.Elem().Kind() == reflect.Struct) {
 		return grabEncodeTargets(alg, obj)
 	}
 	return alg.Header(), obj, nil
